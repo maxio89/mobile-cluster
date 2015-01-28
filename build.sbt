@@ -21,6 +21,8 @@ lazy val backend = (project in file("backend"))
 
 lazy val api = (project in file("api")).settings(name := "api", libraryDependencies ++= Dependencies.backend)
 
+mainClass in Compile := Some("pl.edu.agh.backend.Boot")
+
 //
 // Scala Compiler Options
 // If this project is only a subproject, add these to a common project setting.
@@ -32,3 +34,6 @@ scalacOptions in ThisBuild ++= Seq("-target:jvm-1.7", "-encoding", "UTF-8", "-de
   "-Ywarn-adapted-args", // Warn if an argument list is modified to match the receiver
   "-Ywarn-value-discard", // Warn when non-Unit expression results are unused
   "-Ywarn-inaccessible", "-Ywarn-dead-code")
+
+enablePlugins(AkkaAppPackaging)
+enablePlugins(UniversalPlugin)

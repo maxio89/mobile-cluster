@@ -11,17 +11,18 @@ import scala.collection.JavaConversions._
  */
 object Backend extends App {
 
-  // Simple cli parsing
   val port = args match {
-    case Array() => "0"
+    case Array() => Nil
     case Array(_port) => _port
     case args => throw new IllegalArgumentException(s"only ports. Args [ $args ] are invalid")
   }
 
-  // System initialization
   val properties = Map("akka.remote.netty.tcp.port" -> port)
 
-  val system = ActorSystem("mobile-cluster", (ConfigFactory parseMap properties).withFallback(ConfigFactory.load()))
+  val system = port match {
+    case Nil => ActorSystem("application")
+    case _ => ActorSystem("application", (ConfigFactory parseMap properties).withFallback(ConfigFactory.load()))
+  }
 
   // Deploy actors and services
   FactorialBackend startOn system

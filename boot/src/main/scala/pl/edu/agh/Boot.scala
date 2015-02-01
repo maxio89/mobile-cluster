@@ -1,21 +1,18 @@
-package pl.edu.agh.backend
+package pl.edu.agh
 
 import akka.actor.ActorSystem
 import akka.kernel.Bootable
 import pl.edu.agh.backend.factorial.FactorialBackend
 
-
 class Boot extends Bootable {
 
   val system = ActorSystem("mobile-cluster")
 
-  def startup() =
-  {
+  def startup() = {
     FactorialBackend startOn system
   }
 
-  def shutdown() =
-  {
+  def shutdown() = {
     system.shutdown()
   }
 }

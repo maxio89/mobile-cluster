@@ -1,11 +1,13 @@
 package pl.edu.agh.backend
 
-import akka.actor._
+import akka.actor.{ActorSystem, AddressFromURIString, RootActorPath}
+import akka.japi.Util.immutableSeq
 import com.typesafe.config.ConfigFactory
 import pl.edu.agh.backend.factorial.FactorialBackend
+import pl.edu.agh.backend.persistence.SharedJournal
+import pl.edu.agh.backend.worker.{Master, Worker}
 
 import scala.collection.JavaConversions._
-
 /**
  * Booting a cluster backend node with all actors
  */
@@ -25,5 +27,21 @@ object Backend extends App {
   }
 
   // Deploy actors and services
+
+  SharedJournal startOn system
+
   FactorialBackend startOn system
+
+  Master startOn system
+
+  val workerConf = ConfigFactory.load("worker")
+
+  val workerSystem = ActorSystem("applicationWorker", workerConf)
+
+  val initialContacts = immutableSeq(workerConf.getStringList("contact-points")).map {
+    case AddressFromURIString(addr) ⇒ workerSystem.actorSelection(RootActorPath(addr) / "user" / "receptionist")
+  }.toSet
+
+  Worker.startOn(workerSystem, initialContacts)
+
 }

@@ -1,7 +1,8 @@
 package controllers.services
 
-import actors.services.FactorialActor
-import actors.services.FactorialActor._
+import actors.services.factorial.FactorialActor
+import FactorialActor._
+import actors.services.factorial.FactorialActor
 import pl.edu.agh.api.FactorialService
 import play.api.Play.current
 import play.api.mvc._

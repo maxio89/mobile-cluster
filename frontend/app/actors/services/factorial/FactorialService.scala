@@ -1,4 +1,4 @@
-package actors.services
+package actors.services.factorial
 
 import akka.actor._
 import akka.cluster.Cluster

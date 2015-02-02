@@ -13,7 +13,7 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-actor" % Version.akka,
     "com.typesafe.akka" %% "akka-cluster" % Version.akka,
     "com.typesafe.akka" %% "akka-kernel" % Version.akka,
-    "com.google.guava" % "guava" % "18.0"
+    "com.typesafe.akka" %% "akka-contrib" % Version.akka
   )
 
   val webjars = Seq(

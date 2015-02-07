@@ -1,4 +1,4 @@
-package actors.services.master
+package actors.services.ga
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.contrib.pattern.ClusterSingletonProxy

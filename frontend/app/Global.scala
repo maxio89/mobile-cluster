@@ -1,5 +1,5 @@
 import actors.services.factorial.FactorialService
-import actors.services.master.{Frontend, WorkProducer, WorkResultConsumer}
+import actors.services.ga.{Frontend, WorkProducer, WorkResultConsumer}
 import play.api.GlobalSettings
 import play.api.libs.concurrent.Akka
 import play.api.mvc.WithFilters

@@ -1,4 +1,4 @@
-package pl.edu.agh.backend.worker
+package pl.edu.agh.backend.ga
 
 import akka.actor._
 import akka.cluster.Cluster
@@ -12,8 +12,8 @@ import scala.concurrent.duration.{Deadline, FiniteDuration}
 
 class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogging {
 
-  import pl.edu.agh.backend.worker.Master._
-  import pl.edu.agh.backend.worker.WorkState._
+  import pl.edu.agh.backend.ga.Master._
+  import pl.edu.agh.backend.ga.WorkState._
   import scala.concurrent.ExecutionContext.Implicits.global
 
   val mediator = DistributedPubSubExtension(context.system).mediator

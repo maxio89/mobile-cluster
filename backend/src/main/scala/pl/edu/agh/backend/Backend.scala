@@ -5,7 +5,7 @@ import akka.japi.Util.immutableSeq
 import com.typesafe.config.ConfigFactory
 import pl.edu.agh.backend.factorial.FactorialBackend
 import pl.edu.agh.backend.persistence.SharedJournal
-import pl.edu.agh.backend.worker.{Master, Worker}
+import pl.edu.agh.backend.ga.{Master, Worker}
 
 import scala.collection.JavaConversions._
 /**

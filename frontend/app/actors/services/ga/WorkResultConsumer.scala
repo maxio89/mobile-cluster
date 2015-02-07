@@ -1,4 +1,4 @@
-package actors.services.master
+package actors.services.ga
 
 import akka.actor.{ActorSystem, Props, Actor, ActorLogging}
 import akka.contrib.pattern.{DistributedPubSubExtension, DistributedPubSubMediator}

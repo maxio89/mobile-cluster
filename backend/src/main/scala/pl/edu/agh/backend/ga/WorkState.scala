@@ -1,4 +1,4 @@
-package pl.edu.agh.backend.worker
+package pl.edu.agh.backend.ga
 
 import pl.edu.agh.api.WorkModel.Work
 
@@ -32,7 +32,7 @@ case class WorkState private(
                               private val acceptedWorkIds: Set[String],
                               private val doneWorkIds: Set[String]) {
 
-  import pl.edu.agh.backend.worker.WorkState._
+  import pl.edu.agh.backend.ga.WorkState._
 
   def hasWork: Boolean = pendingWork.nonEmpty
 

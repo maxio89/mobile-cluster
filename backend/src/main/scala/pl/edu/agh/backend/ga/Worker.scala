@@ -1,4 +1,4 @@
-package pl.edu.agh.backend.worker
+package pl.edu.agh.backend.ga
 
 import java.util.UUID
 
@@ -27,8 +27,8 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
   extends Actor with ActorLogging {
 
   import pl.edu.agh.api.WorkModel._
-  import pl.edu.agh.backend.worker.MasterWorkerProtocol._
-  import pl.edu.agh.backend.worker.Worker._
+  import pl.edu.agh.backend.ga.MasterWorkerProtocol._
+  import pl.edu.agh.backend.ga.Worker._
 
   val workerId = UUID.randomUUID().toString
 

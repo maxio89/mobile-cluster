@@ -1,4 +1,4 @@
-package pl.edu.agh.backend.worker
+package pl.edu.agh.backend.ga
 
 import akka.actor.Actor
 

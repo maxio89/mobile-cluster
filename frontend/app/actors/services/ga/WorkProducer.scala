@@ -1,4 +1,4 @@
-package actors.services.master
+package actors.services.ga
 
 import java.util.UUID
 

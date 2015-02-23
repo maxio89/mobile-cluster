@@ -1,5 +1,7 @@
 package pl.edu.agh.backend.ga
 
+import pl.edu.agh.api.WorkModel.Result
+
 object MasterWorkerProtocol {
 
   // Messages from Workers
@@ -7,7 +9,7 @@ object MasterWorkerProtocol {
 
   case class WorkerRequestsWork(workerId: String)
 
-  case class WorkIsDone(workerId: String, workId: String, result: Any)
+  case class WorkIsDone(workerId: String, workId: String, result: Result)
 
   case class WorkFailed(workerId: String, workId: String)
 

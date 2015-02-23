@@ -24,8 +24,9 @@ object Application extends Controller {
         Routes.javascriptRouter(varName)(
             routes.javascript.Cluster.clusterNodesWebsocket,
             routes.javascript.Cluster.clusterMetricsWebsocket,
-            services.routes.javascript.Factorial.websocket
-          // TODO Add your routes here
+            services.routes.javascript.Factorial.websocket,
+            services.routes.javascript.Rastrigin.workProducerWebsocket,
+            services.routes.javascript.Rastrigin.workResultConsumerWebsocket
         )
       ).as(JAVASCRIPT)
     }

@@ -1,0 +1,59 @@
+<div class=container>
+    <div class="page-header">
+        <h1>Rastrigin Service</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form class="form-horizontal" role="form" ng-submit="run()">
+                <div class="form-group">
+                    <label for="inputDimension" class="col-sm-2 control-label">Dimension</label>
+                    <div class="col-sm-4">
+                        <input type="number" class="form-control" id="inputDimension" ng-model="dimension" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputCycles" class="col-sm-2 control-label">Cycles</label>
+                    <div class="col-sm-4">
+                        <input type="number" class="form-control" id="inputCycles" ng-model="cycles" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputSize" class="col-sm-2 control-label">Population size</label>
+                    <div class="col-sm-4">
+                        <input type="number" class="form-control" id="inputSize" ng-model="size" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-4">
+                        <button type="submit" class="btn btn-default" style="width: 100%">Run</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-lg-4">
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <span class="badge">{{result}}</span>
+                    Result
+                </li>
+                <li class="list-group-item">
+                    <span class="badge">{{resultCycles}}</span>
+                    Done
+                </li>
+                <li class="list-group-item">
+                    <span class="badge">{{start}}</span>
+                    Started
+                </li>
+                <li class="list-group-item">
+                    <span class="badge">{{finished}}</span>
+                    Finished
+                </li>
+                <li class="list-group-item">
+                    <span class="badge">{{runtime}} sec</span>
+                    Runtime
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

@@ -6,6 +6,7 @@ import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor._
 import akka.contrib.pattern.ClusterClient
 import akka.contrib.pattern.ClusterClient.SendToAll
+import pl.edu.agh.api.WorkModel.{WorkResult, Result}
 
 import scala.concurrent.duration._
 
@@ -19,7 +20,7 @@ object Worker {
   def props(clusterClient: ActorRef, workExecutorProps: Props, registerInterval: FiniteDuration = 10.seconds): Props =
     Props(classOf[Worker], clusterClient, workExecutorProps, registerInterval)
 
-  case class WorkComplete(result: Any)
+  case class WorkComplete(result: Result)
 
 }
 
@@ -81,7 +82,7 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
       log.info("Yikes. Master told me to do work, while I'm working.")
   }
 
-  def waitForWorkIsDoneAck(result: Any): Receive = {
+  def waitForWorkIsDoneAck(result: Result): Receive = {
     case Ack(id) if id == workId =>
       sendToMaster(WorkerRequestsWork(workerId))
       context.setReceiveTimeout(Duration.Undefined)
@@ -94,7 +95,9 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
   override def unhandled(message: Any) = message match {
     case Terminated(`workExecutor`) => context.stop(self)
     case WorkIsReady =>
-    case _ => super.unhandled(message)
+    case _ =>
+      log.info("Unhandled message")
+      super.unhandled(message)
   }
 
   def sendToMaster(msg: Any) = {

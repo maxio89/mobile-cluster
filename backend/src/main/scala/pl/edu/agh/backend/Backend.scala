@@ -28,7 +28,7 @@ object Backend extends App {
 
   // Deploy actors and services
 
-  SharedJournal startOn system
+//  SharedJournal startOn system
 
   FactorialBackend startOn system
 

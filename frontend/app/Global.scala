@@ -14,8 +14,9 @@ object Global extends WithFilters(new GzipFilter(shouldGzip =
   override def onStart(app: play.api.Application)
   {
     FactorialService startOn Akka.system(app)
-    val frontend = Frontend startOn Akka.system(app)
-    WorkProducer.startOn(Akka.system(app), frontend)
-    WorkResultConsumer startOn Akka.system(app)
+    Frontend startOn Akka.system(app)
+//    val frontend = Frontend startOn Akka.system(app)
+//    WorkProducer.startOn(Akka.system(app), frontend)
+//    WorkResultConsumer startOn Akka.system(app)
   }
 }

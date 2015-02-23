@@ -28,7 +28,7 @@ class WorkerActor extends Actor with ActorLogging {
       if (n <= 1) {
         acc
       } else {
-        log.info(s"I've got acc: $acc")
+        log.info(s"I've got accc: $acc")
         factorialAcc(acc * n, n - 1)
       }
     }

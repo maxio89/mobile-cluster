@@ -55,8 +55,48 @@ define([ 'underscore' ], function() {
   };
   FactorialCtrl.$inject = [ '$scope', 'playRoutes' ];
 
+    var RastriginCtrl = function ($scope, playRoutes) {
+        var workProducerWebsocketUrl = playRoutes.controllers.services.Rastrigin.workProducerWebsocket().webSocketUrl();
+        var workResultConsumerWebsocketUrl = playRoutes.controllers.services.Rastrigin.workResultConsumerWebsocket().webSocketUrl();
+        var workProducerWs = new WebSocket(workProducerWebsocketUrl);
+        var workResultConsumerWs = new WebSocket(workResultConsumerWebsocketUrl);
+
+        $scope.cycles = 10;
+        $scope.dimension = 2;
+        $scope.size = 100;
+
+        workResultConsumerWs.onmessage = function (msg) {
+            var data = JSON.parse(msg.data);
+            $scope.$apply(function () {
+                $scope.result = data.value;
+                $scope.resultCycles = data.cycles;
+                $scope.finished = new Date();
+                $scope.runtime = ($scope.finished.getTime() - $scope.start.getTime()) / 1000;
+            });
+        };
+
+        /**
+         * Starting n-cycles reproduction
+         */
+        $scope.run = function () {
+            $scope.done = null;
+            $scope.result = null;
+            $scope.runtime = null;
+            $scope.start = new Date();
+
+            workProducerWs.send(JSON.stringify({
+                n: $scope.dimension, cycles: $scope.cycles, size: $scope.size
+            }));
+        };
+
+    };
+    RastriginCtrl.$inject = ['$scope', 'playRoutes'];
+
+
+
   return {
-    FactorialCtrl : FactorialCtrl
+      FactorialCtrl: FactorialCtrl,
+      RastriginCtrl: RastriginCtrl
   };
 
 });

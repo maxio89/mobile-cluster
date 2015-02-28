@@ -1,17 +1,17 @@
 package actors.services.ga
 
-import pl.edu.agh.api.WorkModel.{Job, Result}
+import pl.edu.agh.api.RastriginWork._
 import play.api.libs.json.Json
 import play.api.mvc.WebSocket.FrameFormatter
 
 object JsonFormatters {
 
   // api conversions
-  implicit val resultFormat = Json.format[Result]
+  implicit val resultFormat = Json.format[RastriginResult]
 
-  implicit val resultFormatter = FrameFormatter.jsonFrame[Result]
+  implicit val resultFormatter = FrameFormatter.jsonFrame[RastriginResult]
 
-  implicit val jobFormat = Json.format[Job]
+  implicit val jobFormat = Json.format[RastriginConfig]
 
-  implicit val jobFormatter = FrameFormatter.jsonFrame[Job]
+  implicit val jobFormatter = FrameFormatter.jsonFrame[RastriginConfig]
 }

@@ -14,8 +14,7 @@ GET   /jsroutes.js              controllers.Application.jsRoutes()
 GET   /api/cluster/nodes        controllers.Cluster.clusterNodesWebsocket
 GET   /api/cluster/metrics      controllers.Cluster.clusterMetricsWebsocket
 GET   /api/services/factorial   controllers.services.Factorial.websocket
-GET   /api/services/workProducer   controllers.services.Rastrigin.workProducerWebsocket
-GET   /api/services/workResultConsumer   controllers.services.Rastrigin.workResultConsumerWebsocket
+GET   /api/services/frontend   controllers.services.Rastrigin.frontendWebsocket
 
 # Static
 # ~~~~

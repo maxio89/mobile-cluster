@@ -25,7 +25,7 @@ define([ 'underscore' ], function() {
         if(data.result.length > 10) {
           result = data.result.substr(1,7) + '...';
         }
-        
+
         $scope.result = result;
         $scope.done = $scope.done + 1;
         if($scope.done == $scope.times) {
@@ -34,7 +34,7 @@ define([ 'underscore' ], function() {
         }
       });
     };
-    
+
     /**
      * Starting n-times calculations
      */
@@ -56,24 +56,25 @@ define([ 'underscore' ], function() {
   FactorialCtrl.$inject = [ '$scope', 'playRoutes' ];
 
     var RastriginCtrl = function ($scope, playRoutes) {
-        var workProducerWebsocketUrl = playRoutes.controllers.services.Rastrigin.workProducerWebsocket().webSocketUrl();
-        var workResultConsumerWebsocketUrl = playRoutes.controllers.services.Rastrigin.workResultConsumerWebsocket().webSocketUrl();
-        var workProducerWs = new WebSocket(workProducerWebsocketUrl);
-        var workResultConsumerWs = new WebSocket(workResultConsumerWebsocketUrl);
+        var frontendWebsocketUrl = playRoutes.controllers.services.Rastrigin.frontendWebsocket().webSocketUrl();
+        var frontendWs = new WebSocket(frontendWebsocketUrl);
 
-        $scope.cycles = 10;
         $scope.dimension = 2;
-        $scope.size = 100;
+        $scope.initialSize = 100;
+        $scope.maxSize = 150;
+        $scope.mu = 0.4;
+        $scope.xover = 0.8;
+        $scope.maxCycles = 100;
 
-        workResultConsumerWs.onmessage = function (msg) {
+        frontendWs.onmessage = function (msg) {
             var data = JSON.parse(msg.data);
             $scope.$apply(function () {
                 $scope.result = data.value;
-                $scope.resultCycles = data.cycles;
                 $scope.finished = new Date();
                 $scope.runtime = ($scope.finished.getTime() - $scope.start.getTime()) / 1000;
             });
         };
+
 
         /**
          * Starting n-cycles reproduction
@@ -84,8 +85,8 @@ define([ 'underscore' ], function() {
             $scope.runtime = null;
             $scope.start = new Date();
 
-            workProducerWs.send(JSON.stringify({
-                n: $scope.dimension, cycles: $scope.cycles, size: $scope.size
+            frontendWs.send(JSON.stringify({
+                n: $scope.dimension, initialSize: $scope.initialSize, maxSize: $scope.maxSize, xover: $scope.xover, mu: $scope.mu, maxCycles: $scope.maxCycles
             }));
         };
 

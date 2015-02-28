@@ -1,19 +1,18 @@
-package pl.edu.agh.backend.ga
+package pl.edu.agh.backend.workers
 
 import akka.actor._
-import akka.cluster.Cluster
-import akka.contrib.pattern.{ClusterSingletonManager, ClusterReceptionistExtension, DistributedPubSubExtension, DistributedPubSubMediator}
-import akka.persistence.PersistentActor
+import akka.contrib.pattern.{ClusterReceptionistExtension, ClusterSingletonManager, DistributedPubSubExtension, DistributedPubSubMediator}
 import pl.edu.agh.api.Constants
+import pl.edu.agh.api.Work._
 import pl.edu.agh.api.MasterService._
-import pl.edu.agh.api.WorkModel._
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
 class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
 
-  import pl.edu.agh.backend.ga.Master._
-  import pl.edu.agh.backend.ga.WorkState._
+  import pl.edu.agh.backend.workers.Master._
+  import pl.edu.agh.backend.workers.WorkState._
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   val mediator = DistributedPubSubExtension(context.system).mediator
@@ -59,54 +58,54 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
             val work = workState.nextWork
 //            persist(WorkStarted(work.workId)) { event =>
 //              workState = workState.updated(event)
-              workState = workState.updated(WorkStarted(work.workId))
-              log.info("Giving worker {} some work {}", workerId, work.workId)
-              workers += (workerId -> s.copy(status = Busy(work.workId, Deadline.now + workTimeout)))
+            workState = workState.updated(WorkStarted(work.id))
+            log.info("Giving worker {} some work {}", workerId, work.id)
+            workers += (workerId -> s.copy(status = Busy(work.id, Deadline.now + workTimeout)))
               sender() ! work
 //            }
           case _ =>
         }
       }
 
-    case MasterWorkerProtocol.WorkIsDone(workerId, workId, result) =>
+    case MasterWorkerProtocol.WorkIsDone(workerId, id, result) =>
       // idempotent
-      if (workState.isDone(workId)) {
+      if (workState.isDone(id)) {
         // previous Ack was lost, confirm again that this is done
-        sender() ! MasterWorkerProtocol.Ack(workId)
-      } else if (!workState.isInProgress(workId)) {
-        log.info("Work {} not in progress, reported as done by worker {}", workId, workerId)
+        sender() ! MasterWorkerProtocol.Ack(id)
+      } else if (!workState.isInProgress(id)) {
+        log.info("Work {} not in progress, reported as done by worker {}", id, workerId)
       } else {
-        log.info("Work {} is done by worker {}", workId, workerId)
-        changeWorkerToIdle(workerId, workId)
-//        persist(WorkCompleted(workId, result)) { event ⇒
+        log.info("Work {} is done by worker {}", id, workerId)
+        changeWorkerToIdle(workerId, id)
+        //        persist(WorkCompleted(id, result)) { event ⇒
 //          workState = workState.updated(event)
-          workState = workState.updated(WorkCompleted(workId, result))
-          mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(workId, result))
+        workState = workState.updated(WorkCompleted(id, result))
+        mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(id, result))
           // Ack back to original sender
-          sender ! MasterWorkerProtocol.Ack(workId)
+        sender ! MasterWorkerProtocol.Ack(id)
 //        }
       }
 
-    case MasterWorkerProtocol.WorkFailed(workerId, workId) =>
-      if (workState.isInProgress(workId)) {
-        log.info("Work {} failed by worker {}", workId, workerId)
-        changeWorkerToIdle(workerId, workId)
-//        persist(WorkerFailed(workId)) { event ⇒
+    case MasterWorkerProtocol.WorkFailed(workerId, id) =>
+      if (workState.isInProgress(id)) {
+        log.info("Work {} failed by worker {}", id, workerId)
+        changeWorkerToIdle(workerId, id)
+        //        persist(WorkerFailed(id)) { event ⇒
 //          workState = workState.updated(event)
-          workState = workState.updated(WorkerFailed(workId))
+        workState = workState.updated(WorkerFailed(id))
           notifyWorkers()
 //        }
       }
 
     case work: Work =>
       // idempotent
-      if (workState.isAccepted(work.workId)) {
-        sender() ! Ack(work.workId)
+      if (workState.isAccepted(work.id)) {
+        sender() ! Ack(work.id)
       } else {
-        log.info("Accepted work: {}", work.workId)
+        log.info("Accepted work: {}", work.id)
 //        persist(WorkAccepted(work)) { event ⇒
           // Ack back to original sender
-          sender() ! Ack(work.workId)
+        sender() ! Ack(work.id)
 //          workState = workState.updated(event)
           workState = workState.updated(WorkAccepted(work))
           notifyWorkers()
@@ -114,13 +113,13 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
       }
 
     case CleanupTick =>
-      for ((workerId, s@WorkerState(_, Busy(workId, timeout))) ← workers) {
+      for ((workerId, s@WorkerState(_, Busy(id, timeout))) ← workers) {
         if (timeout.isOverdue()) {
-          log.info("Work timed out: {}", workId)
+          log.info("Work timed out: {}", id)
           workers -= workerId
-//          persist(WorkerTimedOut(workId)) { event ⇒
+          //          persist(WorkerTimedOut(id)) { event ⇒
 //            workState = workState.updated(event)
-            workState = workState.updated(WorkerTimedOut(workId))
+          workState = workState.updated(WorkerTimedOut(id))
             notifyWorkers()
 //          }
         }
@@ -137,9 +136,9 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
       }
     }
 
-  def changeWorkerToIdle(workerId: String, workId: String) =
+  def changeWorkerToIdle(workerId: String, id: String) =
     workers.get(workerId) match {
-      case Some(s@WorkerState(_, Busy(`workId`, _))) ⇒
+      case Some(s@WorkerState(_, Busy(`id`, _))) ⇒
         workers += (workerId -> s.copy(status = Idle))
       case _ ⇒
       // ok, might happen after standby recovery, worker state is not persisted
@@ -153,6 +152,7 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
 
 object Master {
   import scala.concurrent.duration._
+  val ResultsTopic = "results"
 
   def workTimeout = 10.seconds
 
@@ -166,12 +166,12 @@ object Master {
 
   private sealed trait WorkerStatus
 
-  private case class Busy(workId: String, deadline: Deadline) extends WorkerStatus
-
   private case class WorkerState(ref: ActorRef, status: WorkerStatus)
 
   private case object Idle extends WorkerStatus
 
   private case object CleanupTick
+
+  private case class Busy(id: String, deadline: Deadline) extends WorkerStatus
 
 }

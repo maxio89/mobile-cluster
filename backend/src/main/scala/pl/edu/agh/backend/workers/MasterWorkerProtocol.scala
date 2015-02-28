@@ -1,6 +1,6 @@
-package pl.edu.agh.backend.ga
+package pl.edu.agh.backend.workers
 
-import pl.edu.agh.api.WorkModel.Result
+import pl.edu.agh.api.Work.Result
 
 object MasterWorkerProtocol {
 

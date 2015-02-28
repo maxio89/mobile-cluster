@@ -1,4 +1,4 @@
-package pl.edu.agh.backend.ga
+package pl.edu.agh.backend.workers
 
 import java.util.UUID
 
@@ -6,7 +6,8 @@ import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor._
 import akka.contrib.pattern.ClusterClient
 import akka.contrib.pattern.ClusterClient.SendToAll
-import pl.edu.agh.api.WorkModel.{WorkResult, Result}
+import pl.edu.agh.api.Work.Result
+import pl.edu.agh.backend.workers.rastrigin.WorkExecutor
 
 import scala.concurrent.duration._
 
@@ -27,9 +28,9 @@ object Worker {
 class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval: FiniteDuration)
   extends Actor with ActorLogging {
 
-  import pl.edu.agh.api.WorkModel._
-  import pl.edu.agh.backend.ga.MasterWorkerProtocol._
-  import pl.edu.agh.backend.ga.Worker._
+  import pl.edu.agh.api.Work._
+  import pl.edu.agh.backend.workers.MasterWorkerProtocol._
+  import pl.edu.agh.backend.workers.Worker._
 
   val workerId = UUID.randomUUID().toString
 

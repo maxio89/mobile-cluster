@@ -12,6 +12,7 @@ abstract class Chromosome[T <: Gene](val code: List[T]) {
   def isNull: Boolean = code.isEmpty
 
   def mutation(gIdx: Double): Chromosome[T]
+
   def normalize(normalizeFactor: Double): Unit = {
     unfitness /= normalizeFactor
   }

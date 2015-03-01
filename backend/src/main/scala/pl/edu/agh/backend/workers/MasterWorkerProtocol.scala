@@ -10,6 +10,7 @@ object MasterWorkerProtocol {
   case class WorkerRequestsWork(workerId: String)
 
   case class WorkIsDone(workerId: String, workId: String, result: Result)
+
   case class WorkInProgress(workerId: String, workId: String, result: Result)
 
   case class WorkFailed(workerId: String, workId: String)

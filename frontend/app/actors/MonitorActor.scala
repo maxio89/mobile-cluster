@@ -1,16 +1,16 @@
 package actors
 
 import akka.actor._
-import akka.cluster._
 import akka.cluster.ClusterEvent._
+import akka.cluster._
 import models.Member._
-import play.api.libs.json._
 import play.api.libs.json.Json._
+import play.api.libs.json._
 
 /**
  * Created by the playframework for a websocket connection.
  * Listens to MemberEvents and pushs them to the websocket.
- * 
+ *
  * @param out - the websocket to which we can push messages
  */
 class MonitorActor(out: ActorRef) extends Actor with ActorLogging {
@@ -23,17 +23,17 @@ class MonitorActor(out: ActorRef) extends Actor with ActorLogging {
     cluster.subscribe(self, initialStateMode = InitialStateAsEvents,
       classOf[MemberEvent], classOf[UnreachableMember])
   }
-  
+
   // clean up on shutdown
   override def postStop(): Unit = cluster unsubscribe self
 
   // handle the member events
   def receive = {
-    case MemberUp(member)                      => handleMemberUp(member)
-    case UnreachableMember(member)             => handleUnreachable(member)
+    case MemberUp(member) => handleMemberUp(member)
+    case UnreachableMember(member) => handleUnreachable(member)
     case MemberRemoved(member, previousStatus) => handleRemoved(member, previousStatus)
-    case MemberExited(member)                  => handleExit(member)
-    case _: MemberEvent                        => // ignore
+    case MemberExited(member) => handleExit(member)
+    case _: MemberEvent => // ignore
   }
 
   def handleMemberUp(member: Member) {
@@ -57,7 +57,7 @@ class MonitorActor(out: ActorRef) extends Actor with ActorLogging {
 
 
 object MonitorActor {
-  
+
   /**
    * Definition for the controller to create the websocket
    */

@@ -23,14 +23,12 @@ class MetricsActor(out: ActorRef) extends Actor with ActorLogging {
   override def postStop() = cluster unsubscribe self
 
   // handle the events
-  def receive =
-  {
+  def receive = {
     case ClusterMetricsChanged(metrics) => metrics foreach handleMetrics
     case state: CurrentClusterState => // ignore
   }
 
-  def handleMetrics(metrics: NodeMetrics) =
-  {
+  def handleMetrics(metrics: NodeMetrics) = {
     pushHeap(metrics)
     pushCpu(metrics)
   }

@@ -3,8 +3,8 @@
  * dashboard/main.js is the entry module which serves as an entry point so other modules only have
  * to include a single module.
  */
-define(['angular', './routes'], function(angular) {
-  'use strict';
+define(['angular', './routes'], function (angular) {
+    'use strict';
 
-  return angular.module('pl.agh.edu.services', ['ngRoute', 'services.routes']);
+    return angular.module('pl.agh.edu.services', ['ngRoute', 'services.routes']);
 });

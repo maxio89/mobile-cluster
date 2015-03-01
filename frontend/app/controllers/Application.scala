@@ -1,8 +1,8 @@
 package controllers
 
 import play.api._
-import play.api.mvc._
 import play.api.cache._
+import play.api.mvc._
 import play.api.Play.current
 
 /** Application controller, handles authentication */
@@ -22,10 +22,9 @@ object Application extends Controller {
     Action { implicit request =>
       Ok(
         Routes.javascriptRouter(varName)(
-            routes.javascript.Cluster.clusterNodesWebsocket,
-            routes.javascript.Cluster.clusterMetricsWebsocket,
-            services.routes.javascript.Factorial.websocket,
-            services.routes.javascript.Rastrigin.frontendWebsocket
+          routes.javascript.Cluster.clusterNodesWebsocket,
+          routes.javascript.Cluster.clusterMetricsWebsocket,
+          services.routes.javascript.Rastrigin.frontendWebsocket
         )
       ).as(JAVASCRIPT)
     }

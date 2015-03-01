@@ -35,9 +35,7 @@ class Frontend(out: ActorRef) extends Actor with ActorLogging {
     case _: DistributedPubSubMediator.SubscribeAck =>
       log.info("Subscribed results topic")
     case workResult: WorkResult =>
-      log.info(s"Consumed result: ${workResult.result}" +
-        s"")
-      //      log.info(s"Consumed result: ${workResult.result.cycles} - ${workResult.result.value}")
+      log.info(s"Consumed result: ${workResult.result}" + s"")
       out ! workResult.result
     case _ =>
       log.info("Received something")

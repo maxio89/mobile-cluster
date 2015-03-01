@@ -1,22 +1,22 @@
 /**
  * Dashboard controllers.
  */
-define([], function() {
-  'use strict';
+define([], function () {
+    'use strict';
 
-  var HomeCtrl = function($scope) {
+    var HomeCtrl = function ($scope) {
 
-  };
-  HomeCtrl.$inject = [ '$scope' ];
-  
-  var HeaderCtrl = function($scope) {
+    };
+    HomeCtrl.$inject = ['$scope'];
 
-  };
-  HeaderCtrl.$inject = [ '$scope' ];
+    var HeaderCtrl = function ($scope) {
 
-  return {
-    HeaderCtrl : HeaderCtrl,
-    HomeCtrl : HomeCtrl
-  };
+    };
+    HeaderCtrl.$inject = ['$scope'];
+
+    return {
+        HeaderCtrl: HeaderCtrl,
+        HomeCtrl: HomeCtrl
+    };
 
 });

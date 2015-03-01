@@ -11,6 +11,6 @@ object Member {
   implicit val memberWrites: Writes[Member] = Writes { member =>
     Json
       .obj("system" -> member.address.system, "host" -> member.address.host, "port" -> member.address.port, "protocol" -> member.address.protocol,
-      "address" -> member.address.toString, "roles" -> member.roles)
+        "address" -> member.address.toString, "roles" -> member.roles)
   }
 }

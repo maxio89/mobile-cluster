@@ -1,6 +1,4 @@
-import actors.services.factorial.FactorialService
 import play.api.GlobalSettings
-import play.api.libs.concurrent.Akka
 import play.api.mvc.WithFilters
 import play.filters.gzip.GzipFilter
 
@@ -11,10 +9,5 @@ object Global extends WithFilters(new GzipFilter(shouldGzip =
   })) with GlobalSettings {
 
   override def onStart(app: play.api.Application) {
-    FactorialService startOn Akka.system(app)
-    //    Frontend startOn Akka.system(app)
-    //    val frontend = Frontend startOn Akka.system(app)
-    //    WorkProducer.startOn(Akka.system(app), frontend)
-    //    WorkResultConsumer startOn Akka.system(app)
   }
 }

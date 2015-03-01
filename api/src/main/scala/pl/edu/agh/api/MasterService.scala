@@ -2,15 +2,11 @@ package pl.edu.agh.api
 
 object MasterService {
 
-//  Frontend
+  //  Frontend
   case class Ack(workId: String)
 
   case object Ok
 
   case object NotOk
-
-  //WorkProducer
-
-//  case object Tick
 
 }

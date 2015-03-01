@@ -65,7 +65,7 @@ define([ 'underscore' ], function() {
         $scope.mu = 0.4;
         $scope.xover = 0.8;
         $scope.maxCycles = 100;
-        $scope.snapshotFreq = 1;
+        $scope.snapshotFreq = 10;
 
         frontendWs.onmessage = function (msg) {
             var data = JSON.parse(msg.data);
@@ -77,7 +77,9 @@ define([ 'underscore' ], function() {
                 if(data.cycles === $scope.maxCycles) {
                     $scope.finished = currentDate;
                 }
-                $scope.runtime = (currentDate.getTime() - $scope.start.getTime()) / 1000;
+                if(!angular.isUndefined($scope.start)) {
+                    $scope.runtime = (currentDate.getTime() - $scope.start.getTime()) / 1000;
+                }
             });
         };
 
@@ -90,7 +92,6 @@ define([ 'underscore' ], function() {
             $scope.result = null;
             $scope.runtime = null;
             $scope.start = new Date();
-            $scope.snapshotFreq = 1;
 
             frontendWs.send(JSON.stringify({
                 n: $scope.dimension, initialSize: $scope.initialSize, maxSize: $scope.maxSize, xover: $scope.xover, mu: $scope.mu, maxCycles: $scope.maxCycles, snapshotFreq: $scope.snapshotFreq

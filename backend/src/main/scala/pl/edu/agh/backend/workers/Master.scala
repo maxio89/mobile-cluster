@@ -71,7 +71,7 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
       // idempotent
       if (workState.isDone(id)) {
         // previous Ack was lost, confirm again that this is done
-        sender() ! MasterWorkerProtocol.Ack(id)
+        sender ! MasterWorkerProtocol.Ack(id)
       } else if (!workState.isInProgress(id)) {
         log.info("Work {} not in progress, reported as done by worker {}", id, workerId)
       } else {
@@ -89,6 +89,13 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
     case MasterWorkerProtocol.WorkInProgress(workerId, id, result) =>
       log.info("Work {} partially result was sent by worker {}", id, workerId)
       mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(id, result))
+      workers.get(workerId) match {
+        case Some(s@WorkerState(_, Busy(workId, timeout))) =>
+          log.info("Extended timeout {} for work {}", workerId, workId)
+          workers += (workerId -> s.copy(status = Busy(workId, Deadline.now + workTimeout)))
+        //            }
+        case _ =>
+      }
 
     case MasterWorkerProtocol.WorkFailed(workerId, id) =>
       if (workState.isInProgress(id)) {
@@ -165,7 +172,7 @@ object Master {
       PoisonPill, Some("backend")), "master")
   }
 
-  def workTimeout = 30.seconds
+  def workTimeout = 10.seconds
 
   def props(workTimeout: FiniteDuration): Props =
     Props(classOf[Master], workTimeout)

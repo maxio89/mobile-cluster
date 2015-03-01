@@ -23,6 +23,8 @@ object Worker {
 
   case class WorkComplete(result: Result)
 
+  case class PartiallyResult(result: Result)
+
 }
 
 class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval: FiniteDuration)
@@ -78,6 +80,9 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
       sendToMaster(WorkIsDone(workerId, workId, result))
       context.setReceiveTimeout(5.seconds)
       context.become(waitForWorkIsDoneAck(result))
+    case PartiallyResult(result) =>
+      log.info("Work is partially done. Result {}.", result)
+      sendToMaster(WorkInProgress(workerId, workId, result))
 
     case _: Work =>
       log.info("Yikes. Master told me to do work, while I'm working.")

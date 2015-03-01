@@ -23,15 +23,28 @@ class WorkExecutor extends Actor with ActorLogging {
       val evaluation = FunctionOptimization(score)
       val population = createRandomPopulation(config.n, config.initialSize)
 
-      Range(0, config.maxCycles).foreach(i =>
+      Range(0, config.maxCycles).foreach(i => {
         evaluation.mate(population, config, i)
+        if (i % config.snapshotFreq == 0) {
+          population.fittest match {
+            case Some(fittest) => sender() ! Worker.PartiallyResult(RastriginResult(i, Rastrigin.value(fittest.code), numbersToDoubleList(fittest.code)))
+            case None => log.info("No partially result!")
+          }
+        }
+      }
       )
       population.fittest match {
-        case Some(fittest) => sender() ! Worker.WorkComplete(RastriginResult(Rastrigin.value(fittest.code), List()))
+        case Some(fittest) => sender() ! Worker.WorkComplete(RastriginResult(config.maxCycles, Rastrigin.value(fittest.code), numbersToDoubleList(fittest.code)))
         case None => log.info("No result!")
       }
     case _ =>
       log.info("haha")
+  }
+
+  def numbersToDoubleList(numbers: List[pl.edu.agh.backend.ga.example.rastrigin.Number]): List[Double] = {
+    numbers map {
+      number => number.target
+    }
   }
 
   def createRandomPopulation(n: Int, size: Int): Population[pl.edu.agh.backend.ga.example.rastrigin.Number] = {

@@ -65,13 +65,19 @@ define([ 'underscore' ], function() {
         $scope.mu = 0.4;
         $scope.xover = 0.8;
         $scope.maxCycles = 100;
+        $scope.snapshotFreq = 1;
 
         frontendWs.onmessage = function (msg) {
             var data = JSON.parse(msg.data);
             $scope.$apply(function () {
-                $scope.result = data.value;
-                $scope.finished = new Date();
-                $scope.runtime = ($scope.finished.getTime() - $scope.start.getTime()) / 1000;
+                $scope.value = data.value;
+                $scope.point = data.point;
+                $scope.cycles = data.cycles;
+                var currentDate = new Date();
+                if(data.cycles === $scope.maxCycles) {
+                    $scope.finished = currentDate;
+                }
+                $scope.runtime = (currentDate.getTime() - $scope.start.getTime()) / 1000;
             });
         };
 
@@ -84,9 +90,10 @@ define([ 'underscore' ], function() {
             $scope.result = null;
             $scope.runtime = null;
             $scope.start = new Date();
+            $scope.snapshotFreq = 1;
 
             frontendWs.send(JSON.stringify({
-                n: $scope.dimension, initialSize: $scope.initialSize, maxSize: $scope.maxSize, xover: $scope.xover, mu: $scope.mu, maxCycles: $scope.maxCycles
+                n: $scope.dimension, initialSize: $scope.initialSize, maxSize: $scope.maxSize, xover: $scope.xover, mu: $scope.mu, maxCycles: $scope.maxCycles, snapshotFreq: $scope.snapshotFreq
             }));
         };
 

@@ -3,11 +3,6 @@ package pl.edu.agh.backend.ga.strategy
 import pl.edu.agh.backend.ga.strategy.Pool._
 
 /**
- * @param chOpIdx  Index of the gene in the chromosome, manipulated by a genetic operator
- */
-case class GeneticIndices(chOpIdx: Int)
-
-/**
  * @param limit Maximum number of chromosomes allowed in this population
  *              (constrained optimization)
  * @param chromosomes Current pool of chromosomes (type: ArrayBuffer{Chromosome[T]\])
@@ -29,17 +24,13 @@ abstract class Population[T <: Gene](limit: Int, val chromosomes: Pool[T]) {
   def isNull: Boolean
 
   /**
-   * <p>Selection operator for the chromosomes pool The selection relies on the
-   * normalized cumulative unfitness for each of the chromosome ranked by decreasing
-   * order.</p>
+
    * @param score Scoring function applied to all the chromosomes of this population
    * @param cutOff Normalized threshold value for the selection of the fittest chromosomes
    */
   def select(score: Chromosome[T] => Unit, cutOff: Double): Unit
 
   /**
-   * <p>Applies the cross-over operator on the population by pairing
-   * the half most fit chromosomes with the half least fit chromosomes.</p>
    * @param xOver cross-over factor [0, 1]
    */
   def crossover(xOver: Double): Unit
@@ -47,17 +38,10 @@ abstract class Population[T <: Gene](limit: Int, val chromosomes: Pool[T]) {
   /**
    * Apply the mutation of the population. The operation produces a duplicate set of
    * chromosomes that are mutated using the mutate operator on chromosome.
-   * @param mu mutation factor
+   * @param mu mutation factor [0, 1]
    * @return Population with original chromosomes and mutated counter-part
    */
   def mutation(mu: Double): Unit
-
-  /**
-   * Compute the genetic index for cross-over
-   * according to a probability value
-   * @param prob probability value [0, 1]
-   */
-  def geneticIndices(prob: Double): GeneticIndices
 
   /**
    * Return the number of genes in the chromosomes of this population.
@@ -65,8 +49,6 @@ abstract class Population[T <: Gene](limit: Int, val chromosomes: Pool[T]) {
    *         is not empty, -1 otherwise
    */
   def chromosomeSize: Int
-
-  def fittest(depth: Int): Option[Pool[T]]
 
   def fittest: Option[Chromosome[T]]
 

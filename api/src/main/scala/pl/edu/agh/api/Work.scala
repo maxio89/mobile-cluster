@@ -19,6 +19,7 @@ object Work {
     val xover: Double
     val mu: Double
     val maxCycles: Int
+    val snapshotFreq: Int
     val DEFAULT_MAX_CYCLES = 2048
 
     //    def apply(initialSize: Int, maxSize: Int, xover: Double, mu: Double, maxCycles: Int) : Config = new Config(initialSize, maxSize, xover, mu, maxCycles)

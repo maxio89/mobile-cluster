@@ -3,8 +3,8 @@ package pl.edu.agh.backend.workers
 import akka.actor._
 import akka.contrib.pattern.{ClusterReceptionistExtension, ClusterSingletonManager, DistributedPubSubExtension, DistributedPubSubMediator}
 import pl.edu.agh.api.Constants
-import pl.edu.agh.api.Work._
 import pl.edu.agh.api.MasterService._
+import pl.edu.agh.api.Work._
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
@@ -26,19 +26,19 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
   private var workState = WorkState.empty
 
   // persistenceId must include cluster role to support multiple masters
-//  override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {
-//    case Some(role) ⇒ role + "-master"
-//    case None ⇒ "master"
-//  }
+  //  override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {
+  //    case Some(role) ⇒ role + "-master"
+  //    case None ⇒ "master"
+  //  }
 
   override def postStop() = cleanupTask.cancel()
 
-//  override def receiveRecover: Receive = {
-//    case event: WorkDomainEvent =>
-//      // only update current state by applying the event, no side effects
-//      workState = workState.updated(event)
-//      log.info("Replayed {}", event.getClass.getSimpleName)
-//  }
+  //  override def receiveRecover: Receive = {
+  //    case event: WorkDomainEvent =>
+  //      // only update current state by applying the event, no side effects
+  //      workState = workState.updated(event)
+  //      log.info("Replayed {}", event.getClass.getSimpleName)
+  //  }
 
   def receive = {
     case MasterWorkerProtocol.RegisterWorker(workerId) =>
@@ -56,13 +56,13 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
         workers.get(workerId) match {
           case Some(s@WorkerState(_, Idle)) =>
             val work = workState.nextWork
-//            persist(WorkStarted(work.workId)) { event =>
-//              workState = workState.updated(event)
+            //            persist(WorkStarted(work.workId)) { event =>
+            //              workState = workState.updated(event)
             workState = workState.updated(WorkStarted(work.id))
             log.info("Giving worker {} some work {}", workerId, work.id)
             workers += (workerId -> s.copy(status = Busy(work.id, Deadline.now + workTimeout)))
-              sender() ! work
-//            }
+            sender() ! work
+          //            }
           case _ =>
         }
       }
@@ -78,23 +78,27 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
         log.info("Work {} is done by worker {}", id, workerId)
         changeWorkerToIdle(workerId, id)
         //        persist(WorkCompleted(id, result)) { event ⇒
-//          workState = workState.updated(event)
+        //          workState = workState.updated(event)
         workState = workState.updated(WorkCompleted(id, result))
         mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(id, result))
-          // Ack back to original sender
+        // Ack back to original sender
         sender ! MasterWorkerProtocol.Ack(id)
-//        }
+        //        }
       }
+
+    case MasterWorkerProtocol.WorkInProgress(workerId, id, result) =>
+      log.info("Work {} partially result was sent by worker {}", id, workerId)
+      mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(id, result))
 
     case MasterWorkerProtocol.WorkFailed(workerId, id) =>
       if (workState.isInProgress(id)) {
         log.info("Work {} failed by worker {}", id, workerId)
         changeWorkerToIdle(workerId, id)
         //        persist(WorkerFailed(id)) { event ⇒
-//          workState = workState.updated(event)
+        //          workState = workState.updated(event)
         workState = workState.updated(WorkerFailed(id))
-          notifyWorkers()
-//        }
+        notifyWorkers()
+        //        }
       }
 
     case work: Work =>
@@ -103,13 +107,13 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
         sender() ! Ack(work.id)
       } else {
         log.info("Accepted work: {}", work.id)
-//        persist(WorkAccepted(work)) { event ⇒
-          // Ack back to original sender
+        //        persist(WorkAccepted(work)) { event ⇒
+        // Ack back to original sender
         sender() ! Ack(work.id)
-//          workState = workState.updated(event)
-          workState = workState.updated(WorkAccepted(work))
-          notifyWorkers()
-//        }
+        //          workState = workState.updated(event)
+        workState = workState.updated(WorkAccepted(work))
+        notifyWorkers()
+        //        }
       }
 
     case CleanupTick =>
@@ -118,10 +122,10 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
           log.info("Work timed out: {}", id)
           workers -= workerId
           //          persist(WorkerTimedOut(id)) { event ⇒
-//            workState = workState.updated(event)
+          //            workState = workState.updated(event)
           workState = workState.updated(WorkerTimedOut(id))
-            notifyWorkers()
-//          }
+          notifyWorkers()
+          //          }
         }
       }
   }
@@ -151,27 +155,29 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
 }
 
 object Master {
+
   import scala.concurrent.duration._
+
   val ResultsTopic = "results"
-
-  def workTimeout = 10.seconds
-
-  def props(workTimeout: FiniteDuration): Props =
-    Props(classOf[Master], workTimeout)
 
   def startOn(system: ActorSystem) {
     system.actorOf(ClusterSingletonManager.props(Master.props(workTimeout), "active",
       PoisonPill, Some("backend")), "master")
   }
 
+  def workTimeout = 30.seconds
+
+  def props(workTimeout: FiniteDuration): Props =
+    Props(classOf[Master], workTimeout)
+
   private sealed trait WorkerStatus
 
   private case class WorkerState(ref: ActorRef, status: WorkerStatus)
 
+  private case class Busy(id: String, deadline: Deadline) extends WorkerStatus
+
   private case object Idle extends WorkerStatus
 
   private case object CleanupTick
-
-  private case class Busy(id: String, deadline: Deadline) extends WorkerStatus
 
 }

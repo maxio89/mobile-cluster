@@ -7,6 +7,8 @@ import models.Member._
 import play.api.libs.json.Json._
 import play.api.libs.json._
 
+import scala.collection.mutable.ArrayBuffer
+
 /**
  * Created by the playframework for a websocket connection.
  * Listens to MemberEvents and pushs them to the websocket.
@@ -16,9 +18,9 @@ import play.api.libs.json._
 class MonitorActor(out: ActorRef) extends Actor with ActorLogging {
 
   val cluster = Cluster(context.system)
+  private val members: ArrayBuffer[Member] = new ArrayBuffer()
 
-
-  // subscribe to cluster changes, re-subscribe when restart 
+  // subscribe to cluster changes, re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, initialStateMode = InitialStateAsEvents,
       classOf[MemberEvent], classOf[UnreachableMember])
@@ -37,21 +39,42 @@ class MonitorActor(out: ActorRef) extends Actor with ActorLogging {
   }
 
   def handleMemberUp(member: Member) {
+    if (member.hasRole("backend")) {
+      members += member
+      if (isOldest(member)) {
+        implicit val masterMarkerWrites = Json.writes[MasterMarker]
+        out ! (Json.obj("state" -> "up") ++ toJson(MasterMarker(member)).as[JsObject])
+        return
+      }
+    }
     out ! (Json.obj("state" -> "up") ++ toJson(member).as[JsObject])
+  }
+
+  def isOldest(newMember: Member): Boolean = {
+    if (members.size == 1 && members.contains(newMember)) return true
+    for (member <- members) if (!newMember.isOlderThan(member)) return false
+    true
   }
 
   def handleUnreachable(member: Member) {
     out ! (Json.obj("state" -> "unreachable") ++ toJson(member).as[JsObject])
-
   }
 
   def handleRemoved(member: Member, previousStatus: MemberStatus) {
+    if (member.hasRole("master")) {
+      members -= member
+    }
     out ! (Json.obj("state" -> "removed") ++ toJson(member).as[JsObject])
   }
 
   def handleExit(member: Member) {
+    if (member.hasRole("master")) {
+      members -= member
+    }
     out ! (Json.obj("state" -> "exit") ++ toJson(member).as[JsObject])
   }
+
+  case class MasterMarker(member: Member)
 
 }
 

@@ -31,7 +31,6 @@ class Frontend(out: ActorRef) extends Actor with ActorLogging {
       (masterProxy ? Work(nextWorkId(), config)) map {
         case Ack(_) => Ok
       } recover { case _ => NotOk} pipeTo sender()
-    //      masterProxy ! Work(nextWorkId(), job)
     case _: DistributedPubSubMediator.SubscribeAck =>
       log.info("Subscribed results topic")
     case workResult: WorkResult =>

@@ -21,6 +21,13 @@ define(['underscore'], function () {
          */
         clusterNodesWS.onmessage = function (msg) {
             var node = JSON.parse(msg.data);
+            console.log(msg);
+            if (!angular.isUndefined(node.member)) {
+                var state = node.state;
+                node = node.member;
+                node.state = state;
+                node.roles.push("master");
+            }
             if (node.state == 'removed') {
                 delete nodes[node.address];
             } else {
@@ -29,6 +36,7 @@ define(['underscore'], function () {
             $scope.$apply(function () {
                 $scope.nodes = _.values(nodes);
             });
+            console.log(nodes);
         };
 
         // clusterMetricsWebsocket

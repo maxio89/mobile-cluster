@@ -11,12 +11,13 @@ class Number(override val id: String, override val target: Double) extends Gene(
   def score: Double = -1.0
 
   def crossover(that: Gene): Gene = {
-    getGene(id, that.geneValue)
+    getGene(id, that.target)
   }
 
   def getGene(id: String, target: Double) = new Number(id, target)
 
-  def mutation(mu: Double): Number = if (Random.nextBoolean()) getGene(id, geneValue + ((mu / geneValue) * 100)) else getGene(id, geneValue - ((mu / geneValue) * 100))
+  //TODO take a look
+  def mutation(mu: Double): Number = if (Random.nextBoolean()) getGene(id, target + ((mu / 100) * target)) else getGene(id, target - ((mu / 100) * target))
 }
 
 object Number {
@@ -142,7 +143,6 @@ class Variables(limit: Int, override val chromosomes: Pool[Number]) extends Popu
 }
 
 final protected class FunctionOptimization(score: Chromosome[Number] => Unit) extends Evolution(score)
-
 
 object Point {
 

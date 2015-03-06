@@ -4,7 +4,6 @@ import akka.actor._
 import akka.cluster.ClusterEvent._
 import akka.cluster.StandardMetrics.{Cpu, HeapMemory}
 import akka.cluster.{Cluster, NodeMetrics}
-import models.Metrics
 
 /**
  * Created by the playframework for a websocket connection.
@@ -35,13 +34,13 @@ class MetricsActor(out: ActorRef) extends Actor with ActorLogging {
 
   def pushHeap(nodeMetrics: NodeMetrics): Unit = nodeMetrics match {
     case HeapMemory(address, timestamp, used, committed, max) =>
-      out ! Metrics.HeapMemory(address, timestamp, used, committed, max)
+      out ! models.Metrics.HeapMemory(address, timestamp, used, committed, max)
     case _ => // no heap info
   }
 
   def pushCpu(nodeMetrics: NodeMetrics): Unit = nodeMetrics match {
     case Cpu(address, timestamp, systemLoadAverage, cpuCombined, processors) =>
-      out ! Metrics.Cpu(address, timestamp, systemLoadAverage, cpuCombined, processors)
+      out ! models.Metrics.Cpu(address, timestamp, systemLoadAverage, cpuCombined, processors)
     case _ => // no cpu info
   }
 }

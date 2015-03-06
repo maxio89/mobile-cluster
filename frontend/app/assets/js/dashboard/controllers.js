@@ -21,7 +21,6 @@ define(['underscore'], function () {
          */
         clusterNodesWS.onmessage = function (msg) {
             var node = JSON.parse(msg.data);
-            console.log(msg);
             if (!angular.isUndefined(node.member)) {
                 var state = node.state;
                 node = node.member;
@@ -36,7 +35,6 @@ define(['underscore'], function () {
             $scope.$apply(function () {
                 $scope.nodes = _.values(nodes);
             });
-            console.log(nodes);
         };
 
         // clusterMetricsWebsocket

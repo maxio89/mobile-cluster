@@ -21,7 +21,6 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
     self, CleanupTick)
   // workers state is not event sourced
   private var workers = Map[String, WorkerState]()
-
   // workState is event sourced
   private var workState = WorkState.empty
 
@@ -127,11 +126,12 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
       for ((workerId, s@WorkerState(_, Busy(id, timeout))) ← workers) {
         if (timeout.isOverdue()) {
           log.info("Work timed out: {}", id)
-          workers -= workerId
+          //TODO fix it
+//          workers -= workerId
           //          persist(WorkerTimedOut(id)) { event ⇒
           //            workState = workState.updated(event)
-          workState = workState.updated(WorkerTimedOut(id))
-          notifyWorkers()
+//          workState = workState.updated(WorkerTimedOut(id))
+//          notifyWorkers()
           //          }
         }
       }
@@ -172,7 +172,7 @@ object Master {
       PoisonPill, Some("backend")), "master")
   }
 
-  def workTimeout = 10.seconds
+  def workTimeout = 30.seconds
 
   def props(workTimeout: FiniteDuration): Props =
     Props(classOf[Master], workTimeout)

@@ -12,7 +12,7 @@ import pl.edu.agh.api.Work.{Config, Work, WorkResult}
 import scala.concurrent.duration._
 
 
-class Frontend(out: ActorRef) extends Actor with ActorLogging {
+class FrontendActor(out: ActorRef) extends Actor with ActorLogging {
 
   import context.dispatcher
   import pl.edu.agh.api.MasterService._
@@ -44,12 +44,8 @@ class Frontend(out: ActorRef) extends Actor with ActorLogging {
 
 }
 
-object Frontend extends {
+object FrontendActor extends {
 
-  def startOn(system: ActorSystem): ActorRef = {
-    system.actorOf(Props[Frontend], "frontend")
-  }
-
-  def props(out: ActorRef) = Props(classOf[Frontend], out)
+  def props(out: ActorRef) = Props(classOf[FrontendActor], out)
 
 }

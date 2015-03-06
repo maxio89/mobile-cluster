@@ -3,20 +3,20 @@
 # ~~~~
 
 # Home page
-GET        /                              controllers.Application.index
+GET        /                             controllers.Application.index
 
 # JavaScript routes object
-GET        /jsroutes.js                   controllers.Application.jsRoutes()
+GET        /jsroutes.js                  controllers.Application.jsRoutes()
 
 # Routes used by Angular
 # ~~~~
 
-GET        /api/cluster/nodes             controllers.Cluster.clusterNodesWebsocket
-GET        /api/cluster/metrics           controllers.Cluster.clusterMetricsWebsocket
-GET        /api/services/frontend         controllers.services.Rastrigin.frontendWebsocket
+GET        /api/cluster/nodes            controllers.Cluster.clusterNodesWebsocket
+GET        /api/cluster/metrics          controllers.Cluster.clusterMetricsWebsocket
+GET        /api/services/frontend        controllers.services.ga.Rastrigin.frontendWebsocket
 
 # Static
 # ~~~~
 
 # Map static resources from the /public folder to the /assets URL path
-GET        /assets/*file                  controllers.Assets.versioned(path="/public", file: Asset)
+GET        /assets/*file                 controllers.Assets.versioned(path="/public", file: Asset)

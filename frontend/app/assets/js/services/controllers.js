@@ -9,8 +9,8 @@ define(['underscore'], function () {
     };
     ServicesCtrl.$inject = ['$scope', 'playRoutes'];
 
-    var RastriginCtrl = function ($scope, playRoutes) {
-        var frontendWebsocketUrl = playRoutes.controllers.services.Rastrigin.frontendWebsocket().webSocketUrl();
+    var RastriginCtrl = function ($scope, $interval, playRoutes) {
+        var frontendWebsocketUrl = playRoutes.controllers.services.ga.Rastrigin.frontendWebsocket().webSocketUrl();
         var frontendWs = new WebSocket(frontendWebsocketUrl);
 
         $scope.dimension = 2;
@@ -19,22 +19,34 @@ define(['underscore'], function () {
         $scope.mu = 0.4;
         $scope.xover = 0.8;
         $scope.maxCycles = 100;
-        $scope.snapshotFreq = 10;
+        $scope.snapshotFreq = 100;
+        $scope.results = {};
 
         frontendWs.onmessage = function (msg) {
+
             var data = JSON.parse(msg.data);
-            $scope.$apply(function () {
-                $scope.value = data.value;
-                $scope.point = data.point;
-                $scope.cycles = data.cycles;
-                var currentDate = new Date();
-                if (data.cycles === $scope.maxCycles) {
-                    $scope.finished = currentDate;
+            //$scope.$apply(function () {
+                var result = $scope.results[data.hostname];
+                if (!angular.isUndefined(result)) {
+                    result = result[data.workerId];
                 }
-                if (!angular.isUndefined($scope.start)) {
-                    $scope.runtime = (currentDate.getTime() - $scope.start.getTime()) / 1000;
+                if (angular.isUndefined(result)) {
+                    result = {};
+                    result.data = [{values: [], key: 'Rastrigin function'}];
+                    console.log("aaa");
                 }
-            });
+                $scope.results[data.hostname] = {};
+                $scope.results[data.hostname][data.workerId] = result;
+                result.value = data.value;
+                result.point = data.point;
+                result.cycles = data.cycles;
+                if (result.cycles === $scope.maxCycles) {
+                    result.finished = new Date();
+                    console.log(result);
+                }
+                result.data[0].values.push({x: result.cycles, y: result.value});
+                result.runtime = data.runtime / 1000;
+            //});
         };
 
 
@@ -43,9 +55,7 @@ define(['underscore'], function () {
          */
         $scope.run = function () {
             $scope.done = null;
-            $scope.result = null;
-            $scope.runtime = null;
-            $scope.start = new Date();
+            $scope.results = {};
 
             frontendWs.send(JSON.stringify({
                 n: $scope.dimension,
@@ -58,8 +68,56 @@ define(['underscore'], function () {
             }));
         };
 
+        $scope.options = {
+            chart: {
+                type: 'lineWithFocusChart',
+                height: 400,
+                focusHeight: 40,
+                margin: {
+                    top: 20,
+                    right: 20,
+                    bottom: 20,
+                    left: 60
+                },
+                x: function (d) {
+                    return d.x;
+                },
+                y: function (d) {
+                    return d.y;
+                },
+                useInteractiveGuideline: true,
+                transitionDuration: 1000,
+                //yScale:  d3.scale.log(),
+                yAxis: {
+                    tickFormat: function (d) {
+                        return d3.format('.6f')(d);
+                    }
+                },
+                y2Axis: {
+                    tickFormat: function (d) {
+                        return d3.format('.6f')(d);
+                    }
+                },
+                tooltips: true,
+                tooltipContent: function (key, x, y, e, graph) {
+                    return '<h3>' + key + '</h3>' +
+                        '<p>' + y + ' at ' + x + '</p>';
+                }
+            }
+        };
+
+
+
+        //$scope.options.chart.yScale = d3.scale.log();
+        //$scope.options.chart.yAxis.tickValues = [1, 10, 100, 1000, 10000, 1000000];
+        //$scope.options.chart.forceY = [1, 1000000];
+        /**
+         * Just apply model...
+         */
+        $interval(function () {
+        }, 1000, 0, true);
     };
-    RastriginCtrl.$inject = ['$scope', 'playRoutes'];
+    RastriginCtrl.$inject = ['$scope', '$interval', 'playRoutes'];
 
 
     return {

@@ -1,6 +1,7 @@
 package pl.edu.agh.backend.workers.rastrigin
 
 import akka.actor.{Actor, ActorLogging}
+import com.typesafe.config.ConfigFactory
 import pl.edu.agh.api.RastriginWork._
 import pl.edu.agh.backend.ga.example.rastrigin.{FunctionOptimization, Point, Variables}
 import pl.edu.agh.backend.ga.strategy.{Chromosome, Population}
@@ -8,9 +9,11 @@ import pl.edu.agh.backend.workers.Worker
 
 import scala.util.Random
 
-class WorkExecutor extends Actor with ActorLogging {
+class WorkExecutor(workerId: String) extends Actor with ActorLogging {
 
   val POPULATION_LIMIT = 150
+  val hostname: String = ConfigFactory.load().getString("akka.remote.netty.tcp.hostname")
+
   private val score = (chr: Chromosome[pl.edu.agh.backend.ga.example.rastrigin.Number]) => {
     chr.unfitness = Rastrigin.value(chr.code)
   }
@@ -22,19 +25,19 @@ class WorkExecutor extends Actor with ActorLogging {
 
       val evaluation = FunctionOptimization(score)
       val population = createRandomPopulation(config.n, config.initialSize)
-
+      val start = System.currentTimeMillis
       Range(0, config.maxCycles).foreach(i => {
         evaluation.mate(population, config, i)
         if (i % config.snapshotFreq == 0) {
           population.fittest match {
-            case Some(fittest) => sender() ! Worker.PartiallyResult(RastriginResult(i, Rastrigin.value(fittest.code), numbersToDoubleList(fittest.code)))
+            case Some(fittest) => sender() ! Worker.PartiallyResult(RastriginResult(workerId, hostname, System.currentTimeMillis - start, i, Rastrigin.value(fittest.code), numbersToDoubleList(fittest.code)))
             case None => log.info("No partially result!")
           }
         }
       }
       )
       population.fittest match {
-        case Some(fittest) => sender() ! Worker.WorkComplete(RastriginResult(config.maxCycles, Rastrigin.value(fittest.code), numbersToDoubleList(fittest.code)))
+        case Some(fittest) => sender() ! Worker.WorkComplete(RastriginResult(workerId, hostname, System.currentTimeMillis - start, config.maxCycles, Rastrigin.value(fittest.code), numbersToDoubleList(fittest.code)))
         case None => log.info("No result!")
       }
     case _ =>
@@ -63,7 +66,7 @@ class WorkExecutor extends Actor with ActorLogging {
   }
 
   object Rastrigin {
-    def value(x: List[pl.edu.agh.backend.ga.example.rastrigin.Number]) = 10 * x.size + x.map(x => (x.geneValue * x.geneValue) - 10 * math.cos(2 * math.Pi * x.geneValue)).sum
+    def value(x: List[pl.edu.agh.backend.ga.example.rastrigin.Number]) = 10 * x.size + x.map(x => (x.target * x.target) - 10 * math.cos(2 * math.Pi * x.target)).sum
   }
 
 }

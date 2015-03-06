@@ -2,7 +2,7 @@ package pl.edu.agh.api
 
 object MasterService {
 
-  //  Frontend
+  //  FrontendActor
   case class Ack(workId: String)
 
   case object Ok

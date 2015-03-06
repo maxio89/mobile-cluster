@@ -11,23 +11,7 @@ import pl.edu.agh.backend.workers.rastrigin.WorkExecutor
 
 import scala.concurrent.duration._
 
-object Worker {
-
-  def startOn(system: ActorSystem, initialContacts: Set[ActorSelection]) = {
-    val clusterClient = system.actorOf(ClusterClient.props(initialContacts), "clusterClient")
-    system.actorOf(Worker.props(clusterClient, Props[WorkExecutor]), "worker")
-  }
-
-  def props(clusterClient: ActorRef, workExecutorProps: Props, registerInterval: FiniteDuration = 10.seconds): Props =
-    Props(classOf[Worker], clusterClient, workExecutorProps, registerInterval)
-
-  case class WorkComplete(result: Result)
-
-  case class PartiallyResult(result: Result)
-
-}
-
-class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval: FiniteDuration)
+class Worker(clusterClient: ActorRef, registerInterval: FiniteDuration)
   extends Actor with ActorLogging {
 
   import pl.edu.agh.api.Work._
@@ -41,7 +25,7 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
   val registerTask = context.system.scheduler.schedule(0.seconds, registerInterval, clusterClient,
     SendToAll("/user/master/active", RegisterWorker(workerId)))
 
-  val workExecutor = context.watch(context.actorOf(workExecutorProps, "exec"))
+  val workExecutor = context.watch(context.actorOf(Props(classOf[WorkExecutor], workerId), "exec"))
 
   var currentWorkId: Option[String] = None
 
@@ -67,10 +51,10 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
     case WorkIsReady =>
       sendToMaster(WorkerRequestsWork(workerId))
 
-    case Work(workId, job) =>
-      log.info("Got work: {}", job)
+    case Work(workId, config) =>
+      log.info("Got work: {}", config)
       currentWorkId = Some(workId)
-      workExecutor ! job
+      workExecutor ! config
       context.become(working)
   }
 
@@ -99,8 +83,10 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
   }
 
   override def unhandled(message: Any) = message match {
-    case Terminated(`workExecutor`) => context.stop(self)
-    case WorkIsReady =>
+    case Terminated(`workExecutor`) =>
+      log.info("stop self")
+      context.stop(self)
+    case WorkIsReady => log.info("WorkIsReady")
     case _ =>
       log.info("Unhandled message")
       super.unhandled(message)
@@ -109,5 +95,21 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
   def sendToMaster(msg: Any) = {
     clusterClient ! SendToAll("/user/master/active", msg)
   }
+
+}
+
+object Worker {
+
+  def startOn(system: ActorSystem, initialContacts: Set[ActorSelection]) = {
+    val clusterClient = system.actorOf(ClusterClient.props(initialContacts), "clusterClient")
+    system.actorOf(Worker.props(clusterClient), "worker")
+  }
+
+  def props(clusterClient: ActorRef, registerInterval: FiniteDuration = 10.seconds): Props =
+    Props(classOf[Worker], clusterClient, registerInterval)
+
+  case class WorkComplete(result: Result)
+
+  case class PartiallyResult(result: Result)
 
 }

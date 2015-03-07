@@ -18,35 +18,39 @@ define(['underscore'], function () {
         $scope.maxSize = 150;
         $scope.mu = 0.4;
         $scope.xover = 0.8;
-        $scope.maxCycles = 100;
+        $scope.maxCycles = 1000;
         $scope.snapshotFreq = 100;
         $scope.results = {};
 
         frontendWs.onmessage = function (msg) {
-
             var data = JSON.parse(msg.data);
-            //$scope.$apply(function () {
-                var result = $scope.results[data.hostname];
-                if (!angular.isUndefined(result)) {
-                    result = result[data.workerId];
-                }
+            var result = $scope.results[data.hostname];
+            if (!angular.isUndefined(result)) {
+                result = result[data.workerId];
                 if (angular.isUndefined(result)) {
                     result = {};
                     result.data = [{values: [], key: 'Rastrigin function'}];
-                    console.log("aaa");
+                    $scope.results[data.hostname][data.workerId] = result;
+                } else {
+                    if (!angular.isUndefined(result.finished)) {
+                        result.finished = undefined;
+                        result.data[0].values = [];
+                    }
                 }
+            } else {
                 $scope.results[data.hostname] = {};
+                result = {};
+                result.data = [{values: [], key: 'Rastrigin function'}];
                 $scope.results[data.hostname][data.workerId] = result;
-                result.value = data.value;
-                result.point = data.point;
-                result.cycles = data.cycles;
-                if (result.cycles === $scope.maxCycles) {
-                    result.finished = new Date();
-                    console.log(result);
-                }
-                result.data[0].values.push({x: result.cycles, y: result.value});
-                result.runtime = data.runtime / 1000;
-            //});
+            }
+            result.value = data.value;
+            result.point = data.point;
+            result.cycles = data.cycles;
+            if (result.cycles === $scope.maxCycles) {
+                result.finished = new Date();
+            }
+            result.data[0].values.push({x: result.cycles, y: result.value});
+            result.runtime = data.runtime / 1000;
         };
 
 
@@ -54,9 +58,6 @@ define(['underscore'], function () {
          * Starting n-cycles reproduction
          */
         $scope.run = function () {
-            $scope.done = null;
-            $scope.results = {};
-
             frontendWs.send(JSON.stringify({
                 n: $scope.dimension,
                 initialSize: $scope.initialSize,
@@ -106,11 +107,6 @@ define(['underscore'], function () {
             }
         };
 
-
-
-        //$scope.options.chart.yScale = d3.scale.log();
-        //$scope.options.chart.yAxis.tickValues = [1, 10, 100, 1000, 10000, 1000000];
-        //$scope.options.chart.forceY = [1, 1000000];
         /**
          * Just apply model...
          */

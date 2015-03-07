@@ -17,7 +17,10 @@ class Number(override val id: String, override val target: Double) extends Gene(
   def getGene(id: String, target: Double) = new Number(id, target)
 
   //TODO take a look
-  def mutation(mu: Double): Number = if (Random.nextBoolean()) getGene(id, target + ((mu / 100) * target)) else getGene(id, target - ((mu / 100) * target))
+  def mutation(mu: Double): Number = {
+    val mutationValue: Double = (mu / 100) * target
+    if (Random.nextBoolean()) getGene(id, target + mutationValue) else getGene(id, target - mutationValue)
+  }
 }
 
 object Number {

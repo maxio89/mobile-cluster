@@ -1,14 +1,16 @@
 package pl.edu.agh.backend.workers
 
 import akka.actor._
+import akka.cluster.Cluster
 import akka.contrib.pattern.{ClusterReceptionistExtension, ClusterSingletonManager, DistributedPubSubExtension, DistributedPubSubMediator}
+import akka.persistence.{PersistentActor, RecoveryFailure}
 import pl.edu.agh.api.Constants
 import pl.edu.agh.api.MasterService._
 import pl.edu.agh.api.Work._
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
-class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
+class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with PersistentActor {
 
   import pl.edu.agh.backend.workers.Master._
   import pl.edu.agh.backend.workers.WorkState._
@@ -25,21 +27,23 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
   private var workState = WorkState.empty
 
   // persistenceId must include cluster role to support multiple masters
-  //  override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {
-  //    case Some(role) ⇒ role + "-master"
-  //    case None ⇒ "master"
-  //  }
+  override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {
+    case Some(role) ⇒ role + "-master"
+    case None ⇒ "master"
+  }
 
   override def postStop() = cleanupTask.cancel()
 
-  //  override def receiveRecover: Receive = {
-  //    case event: WorkDomainEvent =>
-  //      // only update current state by applying the event, no side effects
-  //      workState = workState.updated(event)
-  //      log.info("Replayed {}", event.getClass.getSimpleName)
-  //  }
+  override def receiveRecover: Receive = {
+    case event: WorkDomainEvent =>
+      // only update current state by applying the event, no side effects
+      workState = workState.updated(event)
+      log.info("Replayed {}", event.getClass.getSimpleName)
+    case event: RecoveryFailure =>
+      log.info("Recovery failed")
+  }
 
-  def receive = {
+  override def receiveCommand = {
     case MasterWorkerProtocol.RegisterWorker(workerId) =>
       if (workers.contains(workerId)) {
         workers += (workerId -> workers(workerId).copy(ref = sender()))
@@ -55,13 +59,13 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
         workers.get(workerId) match {
           case Some(s@WorkerState(_, Idle)) =>
             val work = workState.nextWork
-            //            persist(WorkStarted(work.workId)) { event =>
-            //              workState = workState.updated(event)
-            workState = workState.updated(WorkStarted(work.id))
-            log.info("Giving worker {} some work {}", workerId, work.id)
-            workers += (workerId -> s.copy(status = Busy(work.id, Deadline.now + workTimeout)))
-            sender() ! work
-          //            }
+            persist(WorkStarted(work.id)) { event =>
+              workState = workState.updated(event)
+              workState = workState.updated(WorkStarted(work.id))
+              log.info("Giving worker {} some work {}", workerId, work.id)
+              workers += (workerId -> s.copy(status = Busy(work.id, Deadline.now + workTimeout)))
+              sender() ! work
+            }
           case _ =>
         }
       }
@@ -76,35 +80,36 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
       } else {
         log.info("Work {} is done by worker {}", id, workerId)
         changeWorkerToIdle(workerId, id)
-        //        persist(WorkCompleted(id, result)) { event ⇒
-        //          workState = workState.updated(event)
-        workState = workState.updated(WorkCompleted(id, result))
-        mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(id, result))
-        // Ack back to original sender
-        sender ! MasterWorkerProtocol.Ack(id)
-        //        }
+        persist(WorkCompleted(id, result)) { event ⇒
+          workState = workState.updated(event)
+          workState = workState.updated(WorkCompleted(id, result))
+          mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(id, result))
+          // Ack back to original sender
+          sender ! MasterWorkerProtocol.Ack(id)
+        }
       }
 
     case MasterWorkerProtocol.WorkInProgress(workerId, id, result) =>
       log.info("Work {} partially result was sent by worker {}", id, workerId)
-      mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(id, result))
-      workers.get(workerId) match {
-        case Some(s@WorkerState(_, Busy(workId, timeout))) =>
-          log.info("Extended timeout {} for work {}", workerId, workId)
-          workers += (workerId -> s.copy(status = Busy(workId, Deadline.now + workTimeout)))
-        //            }
-        case _ =>
+      persist(WorkInProgress(id, result)) { event ⇒
+        mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(id, result))
+        workers.get(workerId) match {
+          case Some(s@WorkerState(_, Busy(workId, timeout))) =>
+            log.info("Extended timeout {} for work {}", workerId, workId)
+            workers += (workerId -> s.copy(status = Busy(workId, Deadline.now + workTimeout)))
+          case _ =>
+        }
       }
 
     case MasterWorkerProtocol.WorkFailed(workerId, id) =>
       if (workState.isInProgress(id)) {
         log.info("Work {} failed by worker {}", id, workerId)
         changeWorkerToIdle(workerId, id)
-        //        persist(WorkerFailed(id)) { event ⇒
-        //          workState = workState.updated(event)
-        workState = workState.updated(WorkerFailed(id))
-        notifyWorkers()
-        //        }
+        persist(WorkerFailed(id)) { event ⇒
+          workState = workState.updated(event)
+          workState = workState.updated(WorkerFailed(id))
+          notifyWorkers()
+        }
       }
 
     case work: Work =>
@@ -113,26 +118,25 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
         sender() ! Ack(work.id)
       } else {
         log.info("Accepted work: {}", work.id)
-        //        persist(WorkAccepted(work)) { event ⇒
-        // Ack back to original sender
-        sender() ! Ack(work.id)
-        //          workState = workState.updated(event)
-        workState = workState.updated(WorkAccepted(work))
-        notifyWorkers()
-        //        }
+        persist(WorkAccepted(work)) { event ⇒
+          // Ack back to original sender
+          sender() ! Ack(work.id)
+          workState = workState.updated(event)
+          workState = workState.updated(WorkAccepted(work))
+          notifyWorkers()
+        }
       }
 
     case CleanupTick =>
       for ((workerId, s@WorkerState(_, Busy(id, timeout))) ← workers) {
         if (timeout.isOverdue()) {
           log.info("Work timed out: {}", id)
-          //TODO fix it
-//          workers -= workerId
-          //          persist(WorkerTimedOut(id)) { event ⇒
-          //            workState = workState.updated(event)
-//          workState = workState.updated(WorkerTimedOut(id))
-//          notifyWorkers()
-          //          }
+          workers -= workerId
+          //TODO take last workInProgress state and publish for migration
+          persist(WorkerTimedOut(id)) { event ⇒
+            workState = workState.updated(event)
+            notifyWorkers()
+          }
         }
       }
   }

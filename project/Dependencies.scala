@@ -7,12 +7,13 @@ object Dependencies {
   }
 
   lazy val frontend = common ++ webjars
-  lazy val backend = common ++ metrics
+  lazy val backend = common ++ metrics ++ persistence
 
   val common = Seq(
     "com.typesafe.akka" %% "akka-actor" % Version.akka,
     "com.typesafe.akka" %% "akka-cluster" % Version.akka,
     "com.typesafe.akka" %% "akka-kernel" % Version.akka,
+    "com.typesafe.akka" %% "akka-persistence-experimental" % Version.akka,
     "com.typesafe.akka" %% "akka-contrib" % Version.akka
   )
 
@@ -30,6 +31,10 @@ object Dependencies {
 
   val metrics = Seq(
     "org.fusesource" % "sigar" % "1.6.4"
+  )
+
+  val persistence = Seq(
+    "com.github.ironfish" %% "akka-persistence-mongo-casbah"  % "0.7.5" % "compile"
   )
 
 }

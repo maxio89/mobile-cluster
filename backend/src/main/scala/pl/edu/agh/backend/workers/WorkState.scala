@@ -12,17 +12,19 @@ object WorkState {
     acceptedWorkIds = Set.empty,
     doneWorkIds = Set.empty)
 
-  trait WorkDomainEvent
+  sealed trait WorkDomainEvent
 
-  case class WorkAccepted(work: Work) extends WorkDomainEvent
+  final case class WorkAccepted(work: Work) extends WorkDomainEvent
 
-  case class WorkStarted(id: String) extends WorkDomainEvent
+  final case class WorkStarted(id: String) extends WorkDomainEvent
 
-  case class WorkCompleted(id: String, result: Any) extends WorkDomainEvent
+  final case class WorkCompleted(id: String, result: Any) extends WorkDomainEvent
 
-  case class WorkerFailed(id: String) extends WorkDomainEvent
+  final case class WorkInProgress(id: String, result: Any) extends WorkDomainEvent
 
-  case class WorkerTimedOut(id: String) extends WorkDomainEvent
+  final case class WorkerFailed(id: String) extends WorkDomainEvent
+
+  final case class WorkerTimedOut(id: String) extends WorkDomainEvent
 
 }
 

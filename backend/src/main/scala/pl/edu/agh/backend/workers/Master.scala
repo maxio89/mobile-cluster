@@ -37,8 +37,13 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with P
   override def receiveRecover: Receive = {
     case event: WorkDomainEvent =>
       // only update current state by applying the event, no side effects
-      workState = workState.updated(event)
-      log.info("Replayed {}", event.getClass.getSimpleName)
+      event match {
+        case WorkInProgress(id, result) =>
+//          log.info("###WorkInProgress")
+        case _ =>
+          workState = workState.updated(event)
+          log.info("Replayed {}", event.getClass.getSimpleName)
+      }
     case event: RecoveryFailure =>
       log.info("Recovery failed")
   }
@@ -132,7 +137,7 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with P
         if (timeout.isOverdue()) {
           log.info("Work timed out: {}", id)
           workers -= workerId
-          //TODO take last workInProgress state and publish for migration
+          //TODO take last workInProgress state and publish for migration in case of any node failure
           persist(WorkerTimedOut(id)) { event ⇒
             workState = workState.updated(event)
             notifyWorkers()

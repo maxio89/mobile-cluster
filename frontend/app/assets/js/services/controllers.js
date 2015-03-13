@@ -9,7 +9,7 @@ define(['underscore'], function () {
     };
     ServicesCtrl.$inject = ['$scope', 'playRoutes'];
 
-    var RastriginCtrl = function ($scope, $interval, playRoutes) {
+    var RastriginCtrl = function ($scope, $interval, $http, playRoutes) {
         var frontendWebsocketUrl = playRoutes.controllers.services.ga.Rastrigin.frontendWebsocket().webSocketUrl();
         var frontendWs = new WebSocket(frontendWebsocketUrl);
 
@@ -107,14 +107,23 @@ define(['underscore'], function () {
             }
         };
 
+        $scope.loadHistoricalData = function () {
+            $http.get('/api/services/historicalData')
+                .success(function (data) {
+                    console.log(data);
+                })
+                .error(function (data) {
+                    console.log(data);
+                });
+        };
+
         /**
          * Just apply model...
          */
         $interval(function () {
         }, 1000, 0, true);
     };
-    RastriginCtrl.$inject = ['$scope', '$interval', 'playRoutes'];
-
+    RastriginCtrl.$inject = ['$scope', '$interval', '$http', 'playRoutes'];
 
     return {
         RastriginCtrl: RastriginCtrl

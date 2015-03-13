@@ -14,6 +14,7 @@ GET        /jsroutes.js                  controllers.Application.jsRoutes()
 GET        /api/cluster/nodes            controllers.Cluster.clusterNodesWebsocket
 GET        /api/cluster/metrics          controllers.Cluster.clusterMetricsWebsocket
 GET        /api/services/frontend        controllers.services.ga.Rastrigin.frontendWebsocket
+GET        /api/services/historicalData  controllers.services.ga.Rastrigin.historicalData
 
 # Static
 # ~~~~

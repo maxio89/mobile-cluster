@@ -4,14 +4,15 @@ import java.util.UUID
 
 import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor._
-import akka.contrib.pattern.ClusterClient
-import akka.contrib.pattern.ClusterClient.SendToAll
+import akka.contrib.pattern._
+import pl.edu.agh.api.Constants
+import pl.edu.agh.api.RastriginWork.RastriginConfig
 import pl.edu.agh.api.Work.Result
 import pl.edu.agh.backend.workers.rastrigin.WorkExecutor
 
 import scala.concurrent.duration._
 
-class Worker(clusterClient: ActorRef, registerInterval: FiniteDuration)
+class Worker(registerInterval: FiniteDuration)
   extends Actor with ActorLogging {
 
   import pl.edu.agh.api.Work._
@@ -22,10 +23,17 @@ class Worker(clusterClient: ActorRef, registerInterval: FiniteDuration)
 
   import context.dispatcher
 
-  val registerTask = context.system.scheduler.schedule(0.seconds, registerInterval, clusterClient,
-    SendToAll("/user/master/active", RegisterWorker(workerId)))
+  val masterProxy = context.actorOf(ClusterSingletonProxy.props(
+    singletonPath = Constants.SingletonPath,
+    role = Some(Constants.BackendRole)),
+    name = Constants.MasterProxyName)
+
+  val registerTask = context.system.scheduler.schedule(0.seconds, registerInterval, masterProxy,
+    RegisterWorker(workerId))
 
   val workExecutor = context.watch(context.actorOf(Props(classOf[WorkExecutor], workerId), "exec"))
+  val mediator = DistributedPubSubExtension(context.system).mediator
+  mediator ! DistributedPubSubMediator.Put(self)
 
   var currentWorkId: Option[String] = None
 
@@ -35,41 +43,65 @@ class Worker(clusterClient: ActorRef, registerInterval: FiniteDuration)
   }
 
   override def supervisorStrategy = OneForOneStrategy() {
-    case _: ActorInitializationException => Stop
-    case _: DeathPactException => Stop
+    case _: ActorInitializationException =>
+      log.info("Stopped")
+      Stop
+    case _: DeathPactException =>
+      log.info("DeathPact stopped")
+      Stop
     case _: Exception =>
-      currentWorkId foreach { workId => sendToMaster(WorkFailed(workerId, workId))}
+      currentWorkId foreach { workId => sendToMaster(WorkFailed(workerId, workId)) }
       context.become(idle)
+      log.info("Restarted")
       Restart
   }
 
-  override def postStop() = registerTask.cancel()
+  override def postStop() =
+    log.info("Register canceled")
+
+  registerTask.cancel()
 
   def receive = idle
 
   def idle: Receive = {
     case WorkIsReady =>
       sendToMaster(WorkerRequestsWork(workerId))
-
     case Work(workId, config) =>
       log.info("Got work: {}", config)
       currentWorkId = Some(workId)
       workExecutor ! config
       context.become(working)
+    case Migration(population) =>
+      log.info(s"Ignore immigrants, because I'm not working.")
+    case _: DistributedPubSubMediator.SubscribeAck =>
+      log.info("Subscribed results topic")
+    case _ =>
+      log.info("idle unhandled")
   }
 
   def working: Receive = {
     case WorkComplete(result) =>
       log.info("Work is complete. Result {}.", result)
       sendToMaster(WorkIsDone(workerId, workId, result))
-      context.setReceiveTimeout(10.seconds)
+      context.setReceiveTimeout(30.seconds)
       context.become(waitForWorkIsDoneAck(result))
-    case PartiallyResult(result) =>
+    case PartiallyResult(result, population, config) =>
       log.info("Work is partially done. Result {}.", result)
-      sendToMaster(WorkInProgress(workerId, workId, result))
-
+      sendToMaster(WorkInProgress(workerId, workId, result, population))
+      workExecutor ! config
+    case MigrationRequest(population) =>
+      mediator ! DistributedPubSubMediator.Send(Constants.MigrationPath, Migration(population), localAffinity = false)
+      log.info("Published migration request!")
+    case Migration(population) =>
+      workExecutor ! Migration(population)
+      log.info("Migration received!")
+    case _: DistributedPubSubMediator.SubscribeAck =>
+      log.info("Subscribed migration topic")
     case _: Work =>
       log.info("Yikes. Master told me to do work, while I'm working.")
+    case _ =>
+      log.info("working unhandled")
+
   }
 
   def waitForWorkIsDoneAck(result: Result): Receive = {
@@ -80,6 +112,8 @@ class Worker(clusterClient: ActorRef, registerInterval: FiniteDuration)
     case ReceiveTimeout =>
       log.info("No ack from master, retrying")
       sendToMaster(WorkIsDone(workerId, workId, result))
+    case _ =>
+      log.info("waitForWorkIsDoneAck unhandled")
   }
 
   override def unhandled(message: Any) = message match {
@@ -93,23 +127,26 @@ class Worker(clusterClient: ActorRef, registerInterval: FiniteDuration)
   }
 
   def sendToMaster(msg: Any) = {
-    clusterClient ! SendToAll("/user/master/active", msg)
+    masterProxy ! msg
   }
 
 }
 
 object Worker {
 
-  def startOn(system: ActorSystem, initialContacts: Set[ActorSelection]) = {
-    val clusterClient = system.actorOf(ClusterClient.props(initialContacts), "clusterClient")
-    system.actorOf(Worker.props(clusterClient), "worker")
+  def startOn(system: ActorSystem) = {
+    system.actorOf(Worker.props(), "worker")
   }
 
-  def props(clusterClient: ActorRef, registerInterval: FiniteDuration = 10.seconds): Props =
-    Props(classOf[Worker], clusterClient, registerInterval)
+  def props(registerInterval: FiniteDuration = 60.seconds): Props =
+    Props(classOf[Worker], registerInterval)
 
   case class WorkComplete(result: Result)
 
-  case class PartiallyResult(result: Result)
+  case class PartiallyResult(result: Result, population: Any, config: RastriginConfig)
+
+  case class MigrationRequest(population: Any)
+
+  case class Migration(population: Any)
 
 }

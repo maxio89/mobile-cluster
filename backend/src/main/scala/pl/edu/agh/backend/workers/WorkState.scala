@@ -20,7 +20,7 @@ object WorkState {
 
   final case class WorkCompleted(id: String, result: Any) extends WorkDomainEvent
 
-  final case class WorkInProgress(id: String, result: Any) extends WorkDomainEvent
+  final case class WorkInProgress(id: String, result: Any, population: Any) extends WorkDomainEvent
 
   final case class WorkerFailed(id: String) extends WorkDomainEvent
 
@@ -66,7 +66,7 @@ case class WorkState private(
 
     case WorkerFailed(id) ⇒
       copy(
-        pendingWork = pendingWork enqueue workInProgress(id),
+        pendingWork = pendingWork enqueue workInProgress(id), //java.util.NoSuchElementException: key not found: 71a046e1-c8c3-4be8-b8df-8e99d012cf21
         workInProgress = workInProgress - id)
 
     case WorkerTimedOut(id) ⇒

@@ -18,8 +18,10 @@ define(['underscore'], function () {
         $scope.maxSize = 150;
         $scope.mu = 0.4;
         $scope.xover = 0.8;
-        $scope.maxCycles = 1000;
-        $scope.snapshotFreq = 100;
+        $scope.maxCycles = 100000;
+        $scope.snapshotFreq = 10000;
+        $scope.migrationFreq = 10000;
+        $scope.migrationFactor = 10;
         $scope.results = {};
 
         frontendWs.onmessage = function (msg) {
@@ -65,7 +67,9 @@ define(['underscore'], function () {
                 xover: $scope.xover,
                 mu: $scope.mu,
                 maxCycles: $scope.maxCycles,
-                snapshotFreq: $scope.snapshotFreq
+                snapshotFreq: $scope.snapshotFreq,
+                migrationFreq: $scope.migrationFreq,
+                migrationFactor: $scope.migrationFactor
             }));
         };
 

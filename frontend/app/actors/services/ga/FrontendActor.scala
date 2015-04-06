@@ -2,7 +2,7 @@ package actors.services.ga
 
 import java.util.UUID
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props, _}
+import akka.actor.{Actor, ActorRef, Props, _}
 import akka.contrib.pattern.{ClusterSingletonProxy, DistributedPubSubExtension, DistributedPubSubMediator}
 import akka.pattern._
 import akka.util.Timeout
@@ -18,9 +18,9 @@ class FrontendActor(out: ActorRef) extends Actor with ActorLogging {
   import pl.edu.agh.api.MasterService._
 
   val masterProxy = context.actorOf(ClusterSingletonProxy.props(
-    singletonPath = "/user/master/active",
-    role = Some("backend")),
-    name = "masterProxy")
+    singletonPath = Constants.SingletonPath,
+    role = Some(Constants.BackendRole)),
+    name = Constants.MasterProxyName)
 
   val mediator = DistributedPubSubExtension(context.system).mediator
   mediator ! DistributedPubSubMediator.Subscribe(Constants.ResultsTopic, self)
@@ -30,7 +30,7 @@ class FrontendActor(out: ActorRef) extends Actor with ActorLogging {
       implicit val timeout = Timeout(5.seconds)
       (masterProxy ? Work(nextWorkId(), config)) map {
         case Ack(_) => Ok
-      } recover { case _ => NotOk} pipeTo sender()
+      } recover { case _ => NotOk } pipeTo sender()
     case _: DistributedPubSubMediator.SubscribeAck =>
       log.info("Subscribed results topic")
     case workResult: WorkResult =>

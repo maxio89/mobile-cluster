@@ -1,7 +1,6 @@
 package pl.edu.agh.backend
 
-import akka.actor.{ActorSystem, AddressFromURIString, RootActorPath}
-import akka.japi.Util.immutableSeq
+import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import pl.edu.agh.backend.workers.{Master, Worker}
 
@@ -27,18 +26,8 @@ object Backend extends App {
 
   // Deploy actors and services
 
-  //  SharedJournal startOn system
-
   Master startOn system
 
-  val workerConf = ConfigFactory.load("worker")
-
-  val workerSystem = ActorSystem("applicationWorker", workerConf)
-
-  val initialContacts = immutableSeq(workerConf.getStringList("contact-points")).map {
-    case AddressFromURIString(addr) ⇒ workerSystem.actorSelection(RootActorPath(addr) / "user" / "receptionist")
-  }.toSet
-
-  Worker.startOn(workerSystem, initialContacts)
+  Worker startOn system
 
 }

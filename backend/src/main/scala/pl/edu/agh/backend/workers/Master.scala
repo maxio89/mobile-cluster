@@ -2,7 +2,7 @@ package pl.edu.agh.backend.workers
 
 import akka.actor._
 import akka.cluster.Cluster
-import akka.contrib.pattern.{ClusterReceptionistExtension, ClusterSingletonManager, DistributedPubSubExtension, DistributedPubSubMediator}
+import akka.contrib.pattern.{ClusterSingletonManager, DistributedPubSubExtension, DistributedPubSubMediator}
 import akka.persistence.{PersistentActor, RecoveryFailure}
 import pl.edu.agh.api.Constants
 import pl.edu.agh.api.MasterService._
@@ -18,7 +18,6 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with P
   import scala.concurrent.ExecutionContext.Implicits.global
 
   val mediator = DistributedPubSubExtension(context.system).mediator
-  ClusterReceptionistExtension(context.system).registerService(self)
   val cleanupTask = context.system.scheduler.schedule(workTimeout / 2, workTimeout / 2,
     self, CleanupTick)
   // workers state is not event sourced
@@ -38,14 +37,15 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with P
     case event: WorkDomainEvent =>
       // only update current state by applying the event, no side effects
       event match {
-        case WorkInProgress(id, result) =>
-//          log.info("###WorkInProgress")
+        case WorkInProgress(id, result, population) =>
+          //nothing to do
+          log.info("Replayed WorkInProgress")
         case _ =>
           workState = workState.updated(event)
           log.info("Replayed {}", event.getClass.getSimpleName)
       }
     case event: RecoveryFailure =>
-      log.info("Recovery failed")
+      log.info(s"Recovery failed $event")
   }
 
   override def receiveCommand = {
@@ -66,12 +66,12 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with P
             val work = workState.nextWork
             persist(WorkStarted(work.id)) { event =>
               workState = workState.updated(event)
-              workState = workState.updated(WorkStarted(work.id))
               log.info("Giving worker {} some work {}", workerId, work.id)
               workers += (workerId -> s.copy(status = Busy(work.id, Deadline.now + workTimeout)))
               sender() ! work
             }
           case _ =>
+            log.info("Unhandled WorkerRequestsWork")
         }
       }
 
@@ -87,16 +87,15 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with P
         changeWorkerToIdle(workerId, id)
         persist(WorkCompleted(id, result)) { event ⇒
           workState = workState.updated(event)
-          workState = workState.updated(WorkCompleted(id, result))
           mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(id, result))
           // Ack back to original sender
           sender ! MasterWorkerProtocol.Ack(id)
         }
       }
 
-    case MasterWorkerProtocol.WorkInProgress(workerId, id, result) =>
+    case MasterWorkerProtocol.WorkInProgress(workerId, id, result, population) =>
       log.info("Work {} partially result was sent by worker {}", id, workerId)
-      persist(WorkInProgress(id, result)) { event ⇒
+      persist(WorkInProgress(id, result, population)) { event ⇒
         mediator ! DistributedPubSubMediator.Publish(Constants.ResultsTopic, WorkResult(id, result))
         workers.get(workerId) match {
           case Some(s@WorkerState(_, Busy(workId, timeout))) =>
@@ -112,7 +111,6 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with P
         changeWorkerToIdle(workerId, id)
         persist(WorkerFailed(id)) { event ⇒
           workState = workState.updated(event)
-          workState = workState.updated(WorkerFailed(id))
           notifyWorkers()
         }
       }
@@ -127,7 +125,6 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with P
           // Ack back to original sender
           sender() ! Ack(work.id)
           workState = workState.updated(event)
-          workState = workState.updated(WorkAccepted(work))
           notifyWorkers()
         }
       }
@@ -137,7 +134,7 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with P
         if (timeout.isOverdue()) {
           log.info("Work timed out: {}", id)
           workers -= workerId
-          //TODO take last workInProgress state and publish for migration in case of any node failure
+          //TODO Take the last WorkInProgress state if there is no WorkCompleted record and publish for migration in case of any node failure
           persist(WorkerTimedOut(id)) { event ⇒
             workState = workState.updated(event)
             notifyWorkers()
@@ -178,10 +175,10 @@ object Master {
 
   def startOn(system: ActorSystem) {
     system.actorOf(ClusterSingletonManager.props(Master.props(workTimeout), "active",
-      PoisonPill, Some("backend")), "master")
+      PoisonPill, Some(Constants.BackendRole)), "master")
   }
 
-  def workTimeout = 30.seconds
+  def workTimeout = 60.seconds
 
   def props(workTimeout: FiniteDuration): Props =
     Props(classOf[Master], workTimeout)

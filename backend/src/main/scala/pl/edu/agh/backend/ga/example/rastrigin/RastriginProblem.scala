@@ -14,13 +14,16 @@ class Number(override val id: String, override val target: Double) extends Gene(
     getGene(id, that.target)
   }
 
-  def getGene(id: String, target: Double) = new Number(id, target)
-
   //TODO take a look
   def mutation(mu: Double): Number = {
-    val mutationValue: Double = (mu / 100) * target
-    if (Random.nextBoolean()) getGene(id, target + mutationValue) else getGene(id, target - mutationValue)
+    val mutationValue: Double = (mu * target) / 100
+    if (Random.nextBoolean())
+      getGene(id, target + mutationValue)
+    else
+      getGene(id, target - mutationValue)
   }
+
+  def getGene(id: String, target: Double) = new Number(id, target)
 }
 
 object Number {
@@ -52,8 +55,12 @@ final class Point(override val code: List[Number]) extends Chromosome(code) {
   }
 
   def mutation(mu: Double): Chromosome[Number] = {
-    val xs = Range(0, code.size).map(i =>
-      if (Random.nextBoolean()) code(i).mutation(mu) else code(i)
+    val xs = Range(0, code.size).map(i => {
+      if (Random.nextBoolean())
+        code(i).mutation(mu)
+      else
+        code(i)
+    }
     ).toList
     Point(xs)
   }
@@ -65,7 +72,7 @@ class Variables(limit: Int, override val chromosomes: Pool[Number]) extends Popu
     if (that.size > 0) Variables(limit, chromosomes ++: that.chromosomes) else this
   }
 
-  final def isNull: Boolean = chromosomes.isEmpty
+  final def isEmpty: Boolean = chromosomes.isEmpty
 
   /**
    * <p>Selection operator for the chromosomes pool The selection relies on the
@@ -129,13 +136,22 @@ class Variables(limit: Int, override val chromosomes: Pool[Number]) extends Popu
 
   final def chromosomeSize: Int = if (chromosomes.size > 0) chromosomes.head.size else -1
 
-  final def size: Int = chromosomes.size
-
   def mutation(mu: Double): Unit = {
     chromosomes ++= chromosomes.map(_ mutation mu)
   }
 
   final def fittest: Option[Chromosome[Number]] = if (size > 0) Some(chromosomes.head) else None
+
+  final def size: Int = chromosomes.size
+
+  final def fittest(n: Int): Option[Population[Number]] =
+    if (size > 0) {
+      if (n < size) Some(Variables(limit, chromosomes.take(n)))
+      else
+        Some(Variables(limit, chromosomes.take(size)))
+    } else {
+      None
+    }
 
   final def averageScore: Double = chromosomes.size / chromosomes.map(_.unfitness).sum
 

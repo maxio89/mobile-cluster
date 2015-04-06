@@ -7,7 +7,7 @@ import pl.edu.agh.backend.ga.strategy.Pool._
  *              (constrained optimization)
  * @param chromosomes Current pool of chromosomes (type: ArrayBuffer{Chromosome[T]\])
  */
-abstract class Population[T <: Gene](limit: Int, val chromosomes: Pool[T]) {
+abstract class Population[T <: Gene](limit: Int, val chromosomes: Pool[T]) extends Serializable {
 
   protected final val SCALING_FACTOR = 100
 
@@ -21,7 +21,7 @@ abstract class Population[T <: Gene](limit: Int, val chromosomes: Pool[T]) {
 
   def size: Int
 
-  def isNull: Boolean
+  def isEmpty: Boolean
 
   /**
 
@@ -51,6 +51,8 @@ abstract class Population[T <: Gene](limit: Int, val chromosomes: Pool[T]) {
   def chromosomeSize: Int
 
   def fittest: Option[Chromosome[T]]
+
+  def fittest(n: Int): Option[Population[T]]
 
   def averageScore: Double
 

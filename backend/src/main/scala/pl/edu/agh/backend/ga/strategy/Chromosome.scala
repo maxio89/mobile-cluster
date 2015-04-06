@@ -1,7 +1,7 @@
 package pl.edu.agh.backend.ga.strategy
 
 
-abstract class Chromosome[T <: Gene](val code: List[T]) {
+abstract class Chromosome[T <: Gene](val code: List[T]) extends Serializable {
   var unfitness: Double
 
   def crossover(that: Chromosome[T], chOpIdx: Int): (Chromosome[T], Chromosome[T])
@@ -9,7 +9,7 @@ abstract class Chromosome[T <: Gene](val code: List[T]) {
   @inline
   def size: Int = code.size
 
-  def isNull: Boolean = code.isEmpty
+  def isEmpty: Boolean = code.isEmpty
 
   def mutation(gIdx: Double): Chromosome[T]
 

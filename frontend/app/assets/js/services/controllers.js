@@ -14,16 +14,17 @@ define(['underscore'], function () {
         var frontendWs = new WebSocket(frontendWebsocketUrl);
 
         $scope.dimension = 2;
-        $scope.initialSize = 100;
-        $scope.maxSize = 150;
+        $scope.initialSize = 10;
+        $scope.maxSize = 50;
         $scope.mu = 0.4;
         $scope.xover = 0.8;
-        $scope.maxCycles = 100000;
-        $scope.snapshotFreq = 10000;
-        $scope.migrationFreq = 10000;
+        $scope.maxCycles = 10;
+        $scope.snapshotFreq = 1;
+        $scope.migrationFreq = 1;
         $scope.migrationFactor = 10;
         $scope.results = {};
 
+        //TODO check if in case of starting another work, previous work results are cleared
         frontendWs.onmessage = function (msg) {
             var data = JSON.parse(msg.data);
             var result = $scope.results[data.hostname];

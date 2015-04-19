@@ -3,38 +3,41 @@ package pl.edu.agh.backend.ga.example.rastrigin
 import pl.edu.agh.backend.ga.strategy.Pool._
 import pl.edu.agh.backend.ga.strategy._
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 
-class Number(override val id: String, override val target: Double) extends Gene(id, target) {
+@SerialVersionUID(1L)
+class Number(override val target: Double) extends Gene(target) {
 
   def score: Double = -1.0
 
   def crossover(that: Gene): Gene = {
-    getGene(id, that.target)
+    getGene(that.target)
   }
 
-  //TODO take a look
+  //TODO take a look and try to increase the precision, right now is E-13
   def mutation(mu: Double): Number = {
     val mutationValue: Double = (mu * target) / 100
     if (Random.nextBoolean())
-      getGene(id, target + mutationValue)
+      getGene(target + mutationValue)
     else
-      getGene(id, target - mutationValue)
+      getGene(target - mutationValue)
   }
 
-  def getGene(id: String, target: Double) = new Number(id, target)
+  def getGene(target: Double) = new Number(target)
 }
 
 object Number {
 
   def apply(id: String, target: Double): Number =
-    new Number(id, target)
+    new Number(target)
 
 }
 
+@SerialVersionUID(1L)
 final class Point(override val code: List[Number]) extends Chromosome(code) {
-  var unfitness: Double = 1000 * (1.0 + Random.nextDouble)
+  var unfitness: Double = 0.0
 
   /**
    * <p>Applies the cross-over operator on the population by pairing
@@ -55,17 +58,15 @@ final class Point(override val code: List[Number]) extends Chromosome(code) {
   }
 
   def mutation(mu: Double): Chromosome[Number] = {
-    val xs = Range(0, code.size).map(i => {
-      if (Random.nextBoolean())
-        code(i).mutation(mu)
-      else
-        code(i)
+    val xs = code.indices.map(i => {
+      code(i).mutation(mu)
     }
     ).toList
     Point(xs)
   }
 }
 
+@SerialVersionUID(1L)
 class Variables(limit: Int, override val chromosomes: Pool[Number]) extends Population(limit, chromosomes) {
 
   def +(that: Population[Number]): Population[Number] = {
@@ -79,27 +80,17 @@ class Variables(limit: Int, override val chromosomes: Pool[Number]) extends Popu
    * normalized cumulative unfitness for each of the chromosome ranked by decreasing
    * order.</p>
    * @param score Scoring function applied to all the chromosomes of this population
-   * @param cutOff Normalized threshold value for the selection of the fittest chromosomes
    */
-  def select(score: Chromosome[Number] => Unit, cutOff: Double): Unit = {
-    // Compute the cumulative score for the entire population
-    val cumul = chromosomes.foldLeft(0.0)((s, xy) => {
-      score(xy)
-      s + xy.unfitness
-    }) / SCALING_FACTOR
-
-    // Normalize each chromosome unfitness value
-    chromosomes foreach (_ normalize cumul)
-
+  def select(score: Chromosome[Number] => Unit): Unit = {
+     chromosomes foreach { chromosome =>
+       score(chromosome)
+     }
     // Sorts the chromosome by the increasing value of their unfitness
     val newChromosomes = chromosomes.sortWith(_.unfitness < _.unfitness)
 
-    // Apply a cutoff value to the current size of the population
-    // if the cutoff has been defined.
-    val cutOffSize: Int = (cutOff * newChromosomes.size).floor.toInt
-    val newPopSize = if (limit < cutOffSize) limit else cutOffSize
     chromosomes.clear()
-    chromosomes ++= newChromosomes.take(newPopSize)
+    // Leaves only limited number of chromosomes by taking part from the tail
+    chromosomes ++= newChromosomes.take(limit)
   }
 
   def crossover(xOver: Double): Unit = {
@@ -134,25 +125,32 @@ class Variables(limit: Int, override val chromosomes: Pool[Number]) extends Popu
     if (idx == chromosomeSize) chromosomeSize - 1 else idx
   }
 
-  final def chromosomeSize: Int = if (chromosomes.size > 0) chromosomes.head.size else -1
+  final def chromosomeSize: Int = if (chromosomes.nonEmpty) chromosomes.head.size else -1
 
   def mutation(mu: Double): Unit = {
-    chromosomes ++= chromosomes.map(_ mutation mu)
+    var mutants : Pool[Number] = ArrayBuffer()
+    for(chromosome <- chromosomes) {
+      if (Random.nextBoolean())
+        mutants = mutants :+ (chromosome mutation mu)
+    }
+    chromosomes ++= mutants
   }
 
   final def fittest: Option[Chromosome[Number]] = if (size > 0) Some(chromosomes.head) else None
 
-  final def size: Int = chromosomes.size
-
   final def fittest(n: Int): Option[Population[Number]] =
     if (size > 0) {
-      if (n < size) Some(Variables(limit, chromosomes.take(n)))
+      if (n < size)
+        Some(Variables(limit, chromosomes.take(n)))
       else
         Some(Variables(limit, chromosomes.take(size)))
     } else {
       None
     }
 
+  final def size: Int = chromosomes.size
+
+  //TODO unused
   final def averageScore: Double = chromosomes.size / chromosomes.map(_.unfitness).sum
 
 

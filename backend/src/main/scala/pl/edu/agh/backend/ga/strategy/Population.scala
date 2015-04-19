@@ -1,5 +1,6 @@
 package pl.edu.agh.backend.ga.strategy
 
+import org.slf4j.LoggerFactory
 import pl.edu.agh.backend.ga.strategy.Pool._
 
 /**
@@ -7,9 +8,11 @@ import pl.edu.agh.backend.ga.strategy.Pool._
  *              (constrained optimization)
  * @param chromosomes Current pool of chromosomes (type: ArrayBuffer{Chromosome[T]\])
  */
+@SerialVersionUID(0L)
 abstract class Population[T <: Gene](limit: Int, val chromosomes: Pool[T]) extends Serializable {
 
   protected final val SCALING_FACTOR = 100
+  val log = LoggerFactory.getLogger(this.getClass)
 
   /**
    * <p>Add an array of chromosomes (or new population) to this existing population and return
@@ -26,9 +29,8 @@ abstract class Population[T <: Gene](limit: Int, val chromosomes: Pool[T]) exten
   /**
 
    * @param score Scoring function applied to all the chromosomes of this population
-   * @param cutOff Normalized threshold value for the selection of the fittest chromosomes
    */
-  def select(score: Chromosome[T] => Unit, cutOff: Double): Unit
+  def select(score: Chromosome[T] => Unit): Unit
 
   /**
    * @param xOver cross-over factor [0, 1]
@@ -56,6 +58,13 @@ abstract class Population[T <: Gene](limit: Int, val chromosomes: Pool[T]) exten
 
   def averageScore: Double
 
+  override def toString: String = {
+    var text = "Population{"
+    for (chromosome <- chromosomes) {
+      text += chromosome.toString + ","
+    }
+    text + "}"
+  }
 
   protected def +=(newCode: List[T]): Unit
 }

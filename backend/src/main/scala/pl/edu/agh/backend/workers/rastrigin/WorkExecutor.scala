@@ -28,7 +28,7 @@ class WorkExecutor(workerId: String) extends Actor with ActorLogging {
       log.info("Evaluation")
 
       if (start._2 == 0) {
-        population = createRandomPopulation(config.n, config.initialSize)
+        population = createRandomPopulation(config)
         start = (System.currentTimeMillis, config.maxCycles)
       }
 
@@ -36,7 +36,7 @@ class WorkExecutor(workerId: String) extends Actor with ActorLogging {
         val size = immigrants.size
         population = population + immigrants
         log.info(s"Added $size immigrants")
-        immigrants = Variables(POPULATION_LIMIT, List())
+        immigrants = Variables(config.maxSize, List())
       }
 
       val evaluation = FunctionOptimization(score)
@@ -66,20 +66,23 @@ class WorkExecutor(workerId: String) extends Actor with ActorLogging {
             sender() ! Worker.WorkComplete(RastriginResult(workerId, hostname, System.currentTimeMillis - start._1, cycles, Rastrigin.value(fittest.code), numbersToDoubleList(fittest.code)))
             start = (0L, 0)
             population = null
+            immigrants = Variables(POPULATION_LIMIT, List())
             log.info("Sent results!")
           }
 
         case None => log.info("No result!")
       }
 
-    //TODO in case when work is done and there is some existing immigrants, we need to send them to some other worker
     case Worker.Migration(arg) =>
       arg match {
         case newPopulation: Population[pl.edu.agh.backend.ga.example.rastrigin.Number] =>
-          immigrants = immigrants + newPopulation
-          val size = newPopulation.size
-          val totalSize = immigrants.size
-          log.info(s"$size immigrants arrived, now is $totalSize!")
+          if (self.compareTo(sender()) != 0) {
+            immigrants = newPopulation + immigrants
+            val size = newPopulation.size
+            val totalSize = immigrants.size
+            val path = sender().path
+            log.info(s"$size immigrants arrived from $path, now is $totalSize!")
+          }
       }
     case _ =>
       log.info("haha")
@@ -97,24 +100,28 @@ class WorkExecutor(workerId: String) extends Actor with ActorLogging {
     }
   }
 
-  def createRandomPopulation(n: Int, size: Int): Population[pl.edu.agh.backend.ga.example.rastrigin.Number] = {
+  def createRandomPopulation(config: RastriginConfig): Population[pl.edu.agh.backend.ga.example.rastrigin.Number] = {
     var points: List[Point] = List()
-    Range(0, size).foreach(i => {
+    Range(0, config.initialSize).foreach(i => {
       var numbers: List[pl.edu.agh.backend.ga.example.rastrigin.Number] = List()
-      Range(0, n).foreach(i => {
-        val num = Random.nextDouble()
-        numbers = numbers :+ pl.edu.agh.backend.ga.example.rastrigin.Number(num.toString, num.toDouble)
+      Range(0, config.n).foreach(i => {
+        var num = Random.nextDouble()
+        if (Random.nextBoolean())
+          num = num - 1
+        numbers = numbers :+ pl.edu.agh.backend.ga.example.rastrigin.Number(num.toString, num)
       }
       )
       val point: Point = Point(numbers)
       points = points :+ point
     }
     )
-    Variables(POPULATION_LIMIT, points)
+    Variables(config.maxSize, points)
   }
 
   object Rastrigin {
-    def value(x: List[pl.edu.agh.backend.ga.example.rastrigin.Number]) = 10 * x.size + x.map(x => (x.target * x.target) - 10 * math.cos(2 * math.Pi * x.target)).sum
+    def value(x: List[pl.edu.agh.backend.ga.example.rastrigin.Number]): Double = {
+      10 * x.size + x.map(x => (x.target * x.target) - 10 * math.cos(2 * math.Pi * x.target)).sum
+    }
   }
 
 }

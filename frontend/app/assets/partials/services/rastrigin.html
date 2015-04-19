@@ -9,21 +9,18 @@
             <form class="form-horizontal" role="form" ng-submit="run()">
                 <div class="form-group">
                     <label for="dimension" class="col-sm-4 control-label">Dimension</label>
-
                     <div class="col-sm-8">
                         <input type="number" min="1" class="form-control" id="dimension" ng-model="dimension" required>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="maxCycles" class="col-sm-4 control-label">Cycles</label>
-
                     <div class="col-sm-8">
                         <input type="number" min="1" class="form-control" id="maxCycles" ng-model="maxCycles" required>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="initialSize" class="col-sm-4 control-label">Initial population size</label>
-
                     <div class="col-sm-8">
                         <input type="number" min="1" class="form-control" id="initialSize" ng-model="initialSize"
                                required>
@@ -31,14 +28,12 @@
                 </div>
                 <div class="form-group">
                     <label for="maxSize" class="col-sm-4 control-label">Maximum population size</label>
-
                     <div class="col-sm-8">
                         <input type="number" min="1" class="form-control" id="maxSize" ng-model="maxSize" required>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="snapshotFreq" class="col-sm-4 control-label">Snapshot frequency</label>
-
                     <div class="col-sm-8">
                         <input type="number" max="{{maxCycles}}" min="0" class="form-control" id="snapshotFreq"
                                ng-model="snapshotFreq" required>
@@ -46,8 +41,7 @@
                 </div>
                 <div class="form-group">
                     <label for="migrationFreq" class="col-sm-4 control-label">Migration
-                        frequency</label>
-
+                        frequency (and results)</label>
                     <div class="col-sm-8">
                         <input type="number" max="{{maxCycles}}" min="0" class="form-control"
                                id="migrationFreq"
@@ -67,9 +61,9 @@
                         <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-expanded="false"
                              aria-labelledby="headingOne">
                             <div class="panel-body">
+                                <!--TODO Add crossover method selection-->
                                 <div class="form-group">
                                     <label for="xover" class="col-sm-4 control-label">Cross-over parameter</label>
-
                                     <div class="col-sm-8">
                                         <input type="number" step="0.1" max="1" min="0" class="form-control" id="xover"
                                                ng-model="xover"
@@ -78,7 +72,6 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="mu" class="col-sm-4 control-label">Mutation parameter</label>
-
                                     <div class="col-sm-8">
                                         <input type="number" step="0.1" max="1" min="0" class="form-control" id="mu"
                                                ng-model="mu"
@@ -87,7 +80,6 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="migrationFactor" class="col-sm-4 control-label">Migration factor</label>
-
                                     <div class="col-sm-8">
                                         <input type="number" max="100" min="0" class="form-control" id="migrationFactor"
                                                ng-model="migrationFactor" required>

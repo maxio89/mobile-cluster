@@ -49,11 +49,12 @@ define(['underscore'], function () {
             result.value = data.value;
             result.point = data.point;
             result.cycles = data.cycles;
-            if (result.cycles === $scope.maxCycles) {
-                result.finished = new Date();
-            }
             result.data[0].values.push({x: result.cycles, y: result.value});
             result.runtime = data.runtime / 1000;
+            if (result.cycles === $scope.maxCycles) {
+                result.finished = new Date();
+                console.log(result);
+            }
         };
 
 

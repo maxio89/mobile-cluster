@@ -77,6 +77,7 @@ class WorkExecutor(workerId: String) extends Actor with ActorLogging {
       arg match {
         case newPopulation: Population[pl.edu.agh.backend.ga.example.rastrigin.Number] =>
           if (self.compareTo(sender()) != 0) {
+            //TODO It doesn't work, immigrants are still added when they are coming from the same worker
             immigrants = newPopulation + immigrants
             val size = newPopulation.size
             val totalSize = immigrants.size
@@ -106,8 +107,11 @@ class WorkExecutor(workerId: String) extends Actor with ActorLogging {
       var numbers: List[pl.edu.agh.backend.ga.example.rastrigin.Number] = List()
       Range(0, config.n).foreach(i => {
         var num = Random.nextDouble()
+        //Rastrigin function range [-5.12, 5.12]
         if (Random.nextBoolean())
-          num = num - 1
+          num = num - 5.12
+        else
+          num = num + 4.12
         numbers = numbers :+ pl.edu.agh.backend.ga.example.rastrigin.Number(num.toString, num)
       }
       )

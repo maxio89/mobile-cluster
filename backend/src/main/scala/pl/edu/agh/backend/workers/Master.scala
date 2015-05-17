@@ -134,7 +134,8 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging with P
         if (timeout.isOverdue()) {
           log.info("Work timed out: {}", id)
           workers -= workerId
-          //TODO Take the last WorkInProgress state if there is no WorkCompleted record and publish for migration in case of any node failure
+          //TODO Take a look, I cannot request work any more after work timed out.
+          //TODO Take the last WorkInProgress state if there is no WorkCompleted record and publish for migration in case of any node failure - we can ignore this case because thanks to migration we propagate results to other nodes
           persist(WorkerTimedOut(id)) { event ⇒
             workState = workState.updated(event)
             notifyWorkers()

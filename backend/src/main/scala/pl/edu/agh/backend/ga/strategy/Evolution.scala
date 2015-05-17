@@ -15,8 +15,8 @@ abstract class Evolution[T <: Gene](score: Chromosome[T] => Unit) {
   def mate(population: Population[T], config: Config, cycle: Int) {
     rand.setSeed(rand.nextInt + System.currentTimeMillis)
     population.select(score)
-    population crossover rand.nextDouble * config.xover
-    population mutation rand.nextDouble * config.mu
+    population crossover rand.nextDouble * config.xover //TODO Is random here makes sense? maybe get rid of this factor
+    population mutation rand.nextDouble * config.mu    //TODO Is random here makes sense?
   }
 }
 

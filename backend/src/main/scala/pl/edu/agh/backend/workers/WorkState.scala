@@ -66,7 +66,7 @@ case class WorkState private(
 
     case WorkerFailed(id) ⇒
       copy(
-        pendingWork = pendingWork enqueue workInProgress(id), //java.util.NoSuchElementException: key not found: 71a046e1-c8c3-4be8-b8df-8e99d012cf21
+        pendingWork = pendingWork enqueue workInProgress(id),
         workInProgress = workInProgress - id)
 
     case WorkerTimedOut(id) ⇒

@@ -10,8 +10,8 @@ import play.api.libs.json._
 import scala.collection.mutable.ArrayBuffer
 
 /**
- * Created by the playframework for a websocket connection.
- * Listens to MemberEvents and pushs them to the websocket.
+ * Created by the Play Framework for a websocket connection.
+ * Listens to MemberEvents and pushes them to the websocket.
  *
  * @param out - the websocket to which we can push messages
  */

@@ -13,15 +13,16 @@ define(['underscore'], function () {
         var frontendWebsocketUrl = playRoutes.controllers.services.ga.Rastrigin.frontendWebsocket().webSocketUrl();
         var frontendWs = new WebSocket(frontendWebsocketUrl);
 
-        $scope.dimension = 2;
-        $scope.initialSize = 10;
-        $scope.maxSize = 50;
-        $scope.mu = 0.4;
+        $scope.dimension = 10;
+        $scope.initialSize = 100;
+        $scope.maxSize = 100;
+        $scope.mu = 0.8;
         $scope.xover = 0.8;
-        $scope.maxCycles = 10;
-        $scope.snapshotFreq = 1;
-        $scope.migrationFreq = 1;
-        $scope.migrationFactor = 10;
+        $scope.maxCycles = 10000;
+        $scope.snapshotFreq = 1000;
+        $scope.migrationFreq = 1000;
+        $scope.migrationFactor = 0;
+        $scope.leavePopulation = false;
         $scope.results = {};
 
         //TODO check if in case of starting another work, previous work results are cleared
@@ -51,9 +52,23 @@ define(['underscore'], function () {
             result.cycles = data.cycles;
             result.data[0].values.push({x: result.cycles, y: result.value});
             result.runtime = data.runtime / 1000;
+            //if (result.cycles === $scope.maxCycles || result.value < 0.1) {
             if (result.cycles === $scope.maxCycles) {
                 result.finished = new Date();
-                console.log(result);
+                console.log("Worker id: " + data.workerId);
+                console.log("Runtime: " + result.runtime);
+                console.log("Point:");
+                angular.forEach(result.point, function(val) {
+                    console.log(val);
+                });
+                console.log("Cycles:");
+                angular.forEach(result.data[0].values, function(val) {
+                    console.log(val.x);
+                });
+                console.log("Values:");
+                angular.forEach(result.data[0].values, function(val) {
+                    console.log(val.y);
+                });
             }
         };
 
@@ -71,7 +86,8 @@ define(['underscore'], function () {
                 maxCycles: $scope.maxCycles,
                 snapshotFreq: $scope.snapshotFreq,
                 migrationFreq: $scope.migrationFreq,
-                migrationFactor: $scope.migrationFactor
+                migrationFactor: $scope.migrationFactor,
+                leavePopulation: $scope.leavePopulation
             }));
         };
 

@@ -18,7 +18,7 @@ class Number(override val target: Double) extends Gene(target) {
 
   //TODO take a look and try to increase the precision, right now is E-13
   def mutation(mu: Double): Number = {
-    val mutationValue: Double = (mu * target) / 100
+    val mutationValue: Double = mu * target
     if (Random.nextBoolean())
       getGene(target + mutationValue)
     else

@@ -6,8 +6,8 @@ import akka.cluster.StandardMetrics.{Cpu, HeapMemory}
 import akka.cluster.{Cluster, NodeMetrics}
 
 /**
- * Created by the playframework for a websocket connection.
- * Listens to ClusterMetricsChanged events and pushs them to the websocket.
+ * Created by the Play Framework for a websocket connection.
+ * Listens to ClusterMetricsChanged events and pushes them to the websocket.
  *
  * @param out - the websocket to which we can push messages
  */

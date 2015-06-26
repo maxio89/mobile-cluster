@@ -1,6 +1,7 @@
 #!/bin/sh
 #First argument is IP of rpi
 sbt "project backend" "compile"
+sbt "project frontend" "compile"
 sbt "project boot" "compile"
 sbt "project boot" "stage"
 sbt "project boot" "universal:packageZipTarball"

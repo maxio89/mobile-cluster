@@ -71,8 +71,8 @@ class Worker(registerInterval: FiniteDuration)
       currentWorkId = Some(workId)
       workExecutor ! config
       context.become(working)
-    case Migration(population) =>
-      log.info(s"Ignore immigrants, because I'm not working.")
+    case Migration(senderWorkerId, population) =>
+      log.info(s"Ignore immigrants from $senderWorkerId, because I'm not working.")
     case _: DistributedPubSubMediator.SubscribeAck =>
       log.info("Subscribed results topic")
     case _ =>
@@ -90,11 +90,11 @@ class Worker(registerInterval: FiniteDuration)
       sendToMaster(WorkInProgress(workerId, workId, result, population))
       workExecutor ! config
     case MigrationRequest(population) =>
-      mediator ! DistributedPubSubMediator.Send(Constants.MigrationPath, Migration(population), localAffinity = false)
-      log.info("Published migration request!")
-    case Migration(population) =>
-      workExecutor ! Migration(population)
-      log.info("Migration received!")
+      mediator ! DistributedPubSubMediator.Send(Constants.MigrationPath, Migration(workerId, population), localAffinity = false)
+      log.info(s"Published migration request for $workerId!")
+    case Migration(senderWorkerId, population) =>
+      workExecutor ! Migration(senderWorkerId, population)
+      log.info(s"Migration received from $senderWorkerId!")
     case _: DistributedPubSubMediator.SubscribeAck =>
       log.info("Subscribed migration topic")
     case _: Work =>
@@ -147,6 +147,6 @@ object Worker {
 
   case class MigrationRequest(population: Any)
 
-  case class Migration(population: Any)
+  case class Migration(workerId: String, population: Any)
 
 }

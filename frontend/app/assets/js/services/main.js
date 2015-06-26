@@ -6,5 +6,5 @@
 define(['angular', './routes'], function (angular) {
     'use strict';
 
-    return angular.module('pl.agh.edu.services', ['ngRoute', 'services.routes', 'nvd3']);
+    return angular.module('pl.agh.edu.services', ['ngRoute', 'services.routes']);
 });
